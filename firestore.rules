@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == userId;
+    }
+
+    match /rooms/{roomId} {
+      // Любой вошедший пользователь может читать комнату (нужен код, чтобы узнать id)
+      // и создавать/обновлять её — авторитетность хода проверяется в engine.js на клиенте.
+      // Для полностью "нечитерского" варианта эту логику стоит перенести в Cloud Functions.
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update: if signedIn();
+
+      match /messages/{messageId} {
+        allow read: if signedIn();
+        allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      }
+    }
+  }
+}
