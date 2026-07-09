@@ -8,7 +8,7 @@ import {
   passTurnInRoom,
   startNextRoundInRoom
 } from './roomApi';
-import { canPlay } from './rules';
+import { canPlay, drawPenaltyFor } from './rules';
 import Card from './Card';
 import Chat from './Chat';
 
@@ -115,7 +115,7 @@ export default function Room({ code, onLeave }) {
 
   // status === 'playing'
   const legal = room.pendingDraw > 0
-    ? myHand.filter((c) => c.rank === '7')
+    ? myHand.filter((c) => drawPenaltyFor(c) > 0)
     : myHand.filter((c) => canPlay(c, top, room.activeSuit));
   const canDraw = isMyTurn;
   const noLegalMoves = isMyTurn && legal.length === 0;
@@ -134,7 +134,7 @@ export default function Room({ code, onLeave }) {
           <Card card={top} disabled />
           {room.activeSuit && <div className="active-suit">Заказана масть: {room.activeSuit}</div>}
           {room.pendingDraw > 0 && (
-            <div className="pending-draw">Штраф: возьмите {room.pendingDraw} карт(ы) или отбейтесь семёркой</div>
+            <div className="pending-draw">Штраф: возьмите {room.pendingDraw} карт(ы) или отбейтесь 6-кой/7-кой/королём пик</div>
           )}
         </div>
 

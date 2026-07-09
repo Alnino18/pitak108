@@ -1,5 +1,5 @@
 import { buildDeck, shuffle, handValue } from './deck';
-import { canPlay, drawPenaltyFor, mustPlayAgain } from './rules';
+import { canPlay, drawPenaltyFor, isSkip } from './rules';
 
 const HAND_SIZE = 4;
 const RESET_SCORE = 107; // при таком счёте очки обнуляются
@@ -97,8 +97,8 @@ export function playCard(room, uid, cardId, chosenSuit) {
 
   const top = topCard(room);
 
-  if (room.pendingDraw > 0 && card.rank !== '7') {
-    throw new Error(`Сначала возьмите ${room.pendingDraw} карт(ы) или ответьте семёркой`);
+  if (room.pendingDraw > 0 && drawPenaltyFor(card) === 0) {
+    throw new Error(`Сначала возьмите ${room.pendingDraw} карт(ы) или отбейтесь 6-кой/7-кой`);
   }
   if (!canPlay(card, top, room.activeSuit)) {
     throw new Error('Эта карта не подходит по масти/достоинству');
@@ -118,9 +118,7 @@ export function playCard(room, uid, cardId, chosenSuit) {
   let activeSuit = card.rank === 'Q' ? chosenSuit : null;
 
   // Спецэффекты
-  if (card.rank === '7') {
-    pendingDraw += drawPenaltyFor(card);
-  }
+  pendingDraw += drawPenaltyFor(card); // 6 -> +1, 7 -> +2
   // 10 — обычная карта, разворота хода больше нет
 
   const handEmpty = newHand.length === 0;
@@ -130,7 +128,14 @@ export function playCard(room, uid, cardId, chosenSuit) {
     const updatedPlayers = { ...players };
     for (const pid of room.order) {
       if (pid === uid || updatedPlayers[pid].eliminated) continue;
-      const penalty = handValue(room.hands[pid] || []);
+      const pHand = room.hands[pid] || [];
+      let penalty;
+      if (pHand.length === 1 && pHand[0].rank === 'Q') {
+        // Игрок остался с одной дамой на руке — особый штраф
+        penalty = pHand[0].suit === '♠' ? 40 : 20;
+      } else {
+        penalty = handValue(pHand);
+      }
       let score = (updatedPlayers[pid].score || 0) + penalty;
       let eliminated = updatedPlayers[pid].eliminated;
       if (score === RESET_SCORE) {
@@ -140,6 +145,14 @@ export function playCard(room, uid, cardId, chosenSuit) {
       }
       updatedPlayers[pid] = { ...updatedPlayers[pid], score, eliminated };
     }
+
+    // Бонус победителю раунда, если раунд завершён дамой
+    if (card.rank === 'Q') {
+      const bonus = card.suit === '♠' ? 40 : 20;
+      const winnerScore = Math.max(0, (updatedPlayers[uid].score || 0) - bonus);
+      updatedPlayers[uid] = { ...updatedPlayers[uid], score: winnerScore };
+    }
+
     players = updatedPlayers;
 
     const stillActive = room.order.filter((pid) => !players[pid].eliminated);
@@ -162,9 +175,10 @@ export function playCard(room, uid, cardId, chosenSuit) {
     };
   }
 
-  // 6 — игрок ходит ещё раз, ход не переходит
-  if (!mustPlayAgain(card)) {
-    currentPlayerId = nextPlayer(room, uid, direction);
+  // Туз — следующий игрок пропускает ход
+  currentPlayerId = nextPlayer(room, uid, direction);
+  if (isSkip(card)) {
+    currentPlayerId = nextPlayer(room, currentPlayerId, direction);
   }
 
   return {
