@@ -19,6 +19,7 @@ export default function Room({ code, onLeave }) {
   const [room, setRoom] = useState(null);
   const [error, setError] = useState('');
   const [pendingQueen, setPendingQueen] = useState(null);
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     const unsub = subscribeRoom(code, setRoom);
@@ -90,7 +91,7 @@ export default function Room({ code, onLeave }) {
         )}
         {error && <div className="error">{error}</div>}
 
-        <Chat code={code} uid={uid} name={profile.displayName} />
+        <ChatDrawer code={code} uid={uid} name={profile.displayName} open={chatOpen} onToggle={() => setChatOpen((v) => !v)} />
       </div>
     );
   }
@@ -108,7 +109,7 @@ export default function Room({ code, onLeave }) {
             Играть ещё раз
           </button>
         )}
-        <Chat code={code} uid={uid} name={profile.displayName} />
+        <ChatDrawer code={code} uid={uid} name={profile.displayName} open={chatOpen} onToggle={() => setChatOpen((v) => !v)} />
       </div>
     );
   }
@@ -120,42 +121,86 @@ export default function Room({ code, onLeave }) {
   const canDraw = isMyTurn;
   const noLegalMoves = isMyTurn && legal.length === 0;
 
+  // Остальные игроки, начиная со следующего после меня — раскладываем по дуге сверху стола
+  const others = room.order.filter((pid) => pid !== uid);
+  const myIndex = room.order.indexOf(uid);
+  const orderedOthers = [...room.order.slice(myIndex + 1), ...room.order.slice(0, myIndex)].filter((pid) => others.includes(pid));
+
+  const n = myHand.length;
+  const spread = Math.min(46, n * 7); // общий угол веера, шире руки — шире угол, но не более 46°
+
   return (
-    <div className="room-screen playing">
+    <div className="game-felt">
       <div className="room-topbar">
         <button className="link" onClick={onLeave} type="button">← Выйти</button>
         <div className="room-code">Комната {code}</div>
+        <button className="chat-toggle" onClick={() => setChatOpen((v) => !v)} type="button">💬</button>
       </div>
 
-      <Scoreboard room={room} compact currentPlayerId={room.currentPlayerId} />
+      <div className="seats-ring" data-count={orderedOthers.length}>
+        {orderedOthers.map((pid) => {
+          const p = room.players[pid];
+          const cardCount = room.hands?.[pid]?.length ?? 0;
+          const active = pid === room.currentPlayerId;
+          return (
+            <div key={pid} className={`seat ${active ? 'active' : ''} ${p.eliminated ? 'eliminated' : ''}`}>
+              <div className="seat-avatar">{p.avatar}</div>
+              <div className="seat-name">{p.name}</div>
+              <div className="seat-meta">
+                <span className="seat-score">{p.score}</span>
+                <span className="seat-cards">🂠{cardCount}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-      <div className="table">
-        <div className="discard-area">
-          <Card card={top} disabled />
-          {room.activeSuit && <div className="active-suit">Заказана масть: {room.activeSuit}</div>}
-          {room.pendingDraw > 0 && (
-            <div className="pending-draw">Штраф: возьмите {room.pendingDraw} карт(ы) или отбейтесь 6-кой/7-кой/королём пик</div>
-          )}
+      <div className="center-pile">
+        <div className="pile-stack" title={`В колоде: ${room.deck?.length ?? 0}`}>
+          <Card faceDown small />
+          <span className="pile-count">{room.deck?.length ?? 0}</span>
+        </div>
+        <div className="discard-slot">
+          {top && <Card card={top} disabled />}
+        </div>
+        <div className="pile-hints">
+          {room.activeSuit && <span className="hint-chip">Масть: {room.activeSuit}</span>}
+          {room.pendingDraw > 0 && <span className="hint-chip danger">+{room.pendingDraw} карт</span>}
+        </div>
+      </div>
+
+      <div className="turn-banner">
+        {isMyTurn ? <span className="my-turn">Ваш ход</span> : <span>Ходит: {room.players[room.currentPlayerId]?.name}</span>}
+      </div>
+
+      {error && <div className="table-error">{error}</div>}
+
+      <div className="hand-dock">
+        <div className="hand-fan" style={{ '--n': n }}>
+          {myHand.map((card, i) => {
+            const mid = (n - 1) / 2;
+            const offset = i - mid;
+            const rot = n > 1 ? (offset / mid) * (spread / 2) : 0;
+            const lift = Math.abs(offset) * 2;
+            return (
+              <div
+                key={card.id}
+                className="fan-slot"
+                style={{ '--rot': `${rot}deg`, '--lift': `${lift}px`, zIndex: i }}
+              >
+                <Card
+                  card={card}
+                  onClick={() => handleCardClick(card)}
+                  disabled={!isMyTurn || !legal.some((c) => c.id === card.id)}
+                />
+              </div>
+            );
+          })}
         </div>
 
-        <div className="turn-indicator">
-          {isMyTurn ? <strong>Ваш ход</strong> : <span>Ходит: {room.players[room.currentPlayerId]?.name}</span>}
-        </div>
-
-        <div className="my-hand">
-          {myHand.map((card) => (
-            <Card
-              key={card.id}
-              card={card}
-              onClick={() => handleCardClick(card)}
-              disabled={!isMyTurn || !legal.some((c) => c.id === card.id)}
-            />
-          ))}
-        </div>
-
-        <div className="table-actions">
-          <button className="secondary" disabled={!canDraw} onClick={() => safe(() => drawCardInRoom(code, uid))} type="button">
-            Взять карту{room.pendingDraw > 0 ? ` (${room.pendingDraw})` : ''}
+        <div className="hand-actions">
+          <button className="fab" disabled={!canDraw} onClick={() => safe(() => drawCardInRoom(code, uid))} type="button">
+            🂠<span className="fab-badge">{room.pendingDraw > 0 ? room.pendingDraw : '+1'}</span>
           </button>
           {noLegalMoves && room.pendingDraw === 0 && (
             <button className="secondary" onClick={() => safe(() => passTurnInRoom(code, uid))} type="button">
@@ -163,8 +208,6 @@ export default function Room({ code, onLeave }) {
             </button>
           )}
         </div>
-
-        {error && <div className="error">{error}</div>}
       </div>
 
       {pendingQueen && (
@@ -183,7 +226,7 @@ export default function Room({ code, onLeave }) {
         </div>
       )}
 
-      <Chat code={code} uid={uid} name={profile.displayName} />
+      <ChatDrawer code={code} uid={uid} name={profile.displayName} open={chatOpen} onToggle={() => setChatOpen((v) => !v)} />
     </div>
   );
 }
@@ -204,5 +247,24 @@ function Scoreboard({ room, compact, currentPlayerId }) {
         );
       })}
     </ul>
+  );
+}
+
+function ChatDrawer({ open, onToggle, ...chatProps }) {
+  return (
+    <>
+      {!open && (
+        <button className="chat-fab" onClick={onToggle} type="button">💬</button>
+      )}
+      {open && (
+        <div className="chat-drawer">
+          <div className="chat-drawer-header">
+            <span>Чат</span>
+            <button className="link" onClick={onToggle} type="button">Закрыть ✕</button>
+          </div>
+          <Chat {...chatProps} />
+        </div>
+      )}
+    </>
   );
 }
