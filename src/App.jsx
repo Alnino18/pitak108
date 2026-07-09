@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from './AuthContext';
 import Login from './Login';
+import CompleteProfile from './CompleteProfile';
 import Lobby from './Lobby';
 import Room from './Room';
 import InstallPrompt from './InstallPrompt';
@@ -14,8 +15,10 @@ export default function App() {
   return (
     <>
       <InstallPrompt />
-      {!user || !profile ? (
+      {!user ? (
         <Login />
+      ) : !profile ? (
+        <CompleteProfile />
       ) : roomCode ? (
         <Room code={roomCode} onLeave={() => setRoomCode(null)} />
       ) : (
