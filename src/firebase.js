@@ -5,12 +5,13 @@ import { getFirestore } from 'firebase/firestore';
 // ЗАМЕНИТЕ на конфиг вашего проекта из Firebase Console
 // (Project settings -> General -> Your apps -> SDK setup and configuration)
 const firebaseConfig = {
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
-  projectId: 'YOUR_PROJECT_ID',
-  storageBucket: 'YOUR_PROJECT_ID.appspot.com',
-  messagingSenderId: 'YOUR_SENDER_ID',
-  appId: 'YOUR_APP_ID'
+  apiKey: "AIzaSyAzeebhto-4D6PAB8gT4l1HDpIHzZSALq4",
+  authDomain: "igra-11e65.firebaseapp.com",
+  projectId: "igra-11e65",
+  storageBucket: "igra-11e65.firebasestorage.app",
+  messagingSenderId: "1055266967318",
+  appId: "1:1055266967318:web:68a0a37094927baed44a37",
+  measurementId: "G-LLWJQSS1CP"
 };
 
 export const app = initializeApp(firebaseConfig);
