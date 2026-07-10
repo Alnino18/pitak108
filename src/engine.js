@@ -1,5 +1,5 @@
 import { buildDeck, shuffle, handValue } from './deck';
-import { canPlay, drawPenaltyFor, isSkip, penaltyKind, matchesPendingKind } from './rules';
+import { canPlay, drawPenaltyFor, isSkip, mustPlayAgain, penaltyKind, matchesPendingKind } from './rules';
 
 const MAX_PLAYERS = 12;
 const HAND_SIZE = 6;
@@ -148,11 +148,31 @@ export function playCard(room, uid, cardId, chosenSuit) {
   const handEmpty = newHand.length === 0;
 
   if (handEmpty) {
+    // Если раунд завершён карой 6/7/королём пик — следующий игрок обязан взять
+    // положенный штраф ПЕРЕД тем, как очки будут подсчитаны (штрафные карты входят в подсчёт).
+    let deckForDraw = room.deck;
+    let discardForDraw = discardPile;
+    let extraDrawUid = null;
+    let extraDrawnCards = [];
+    if (kind) {
+      extraDrawUid = nextPlayer(room, uid, direction);
+      const drawCount = drawPenaltyFor(card);
+      for (let i = 0; i < drawCount; i++) {
+        ({ deck: deckForDraw, discardPile: discardForDraw } = reshuffleIfNeeded(deckForDraw, discardForDraw));
+        if (deckForDraw.length === 0) break;
+        extraDrawnCards.push(deckForDraw[deckForDraw.length - 1]);
+        deckForDraw = deckForDraw.slice(0, -1);
+      }
+    }
+
     // Раунд окончен: считаем штрафы остальным игрокам
     const updatedPlayers = { ...players };
     for (const pid of room.order) {
       if (pid === uid || updatedPlayers[pid].eliminated) continue;
-      const pHand = room.hands[pid] || [];
+      let pHand = room.hands[pid] || [];
+      if (pid === extraDrawUid && extraDrawnCards.length > 0) {
+        pHand = [...pHand, ...extraDrawnCards];
+      }
       let penalty;
       if (pHand.length === 1 && pHand[0].rank === 'Q') {
         // Игрок остался с одной дамой на руке — особый штраф
@@ -223,10 +243,14 @@ export function playCard(room, uid, cardId, chosenSuit) {
     };
   }
 
-  // Туз — следующий игрок пропускает ход
-  currentPlayerId = nextPlayer(room, uid, direction);
-  if (isSkip(card)) {
-    currentPlayerId = nextPlayer(room, currentPlayerId, direction);
+  // Туз — следующий игрок пропускает ход; 8 — ходит тот же игрок ещё раз
+  if (mustPlayAgain(card)) {
+    currentPlayerId = uid;
+  } else {
+    currentPlayerId = nextPlayer(room, uid, direction);
+    if (isSkip(card)) {
+      currentPlayerId = nextPlayer(room, currentPlayerId, direction);
+    }
   }
 
   return {

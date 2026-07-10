@@ -11,6 +11,7 @@ import {
 import { canPlay, matchesPendingKind } from './rules';
 import Card from './Card';
 import Chat from './Chat';
+import VoiceChat from './VoiceChat';
 
 const SUITS = ['♠', '♥', '♦', '♣'];
 
@@ -22,6 +23,7 @@ export default function Room({ code, onLeave }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [roundBanner, setRoundBanner] = useState(null);
   const [shareStatus, setShareStatus] = useState('');
+  const [statsOpen, setStatsOpen] = useState(false);
   const lastRoundWinner = useRef(null);
 
   function inviteLink() {
@@ -128,6 +130,8 @@ export default function Room({ code, onLeave }) {
           <p className="muted">Друзья, перешедшие по ссылке, попадут в комнату сразу — код вводить не нужно.</p>
         </div>
 
+        <VoiceChat code={code} uid={uid} players={room.players} />
+
         <ul className="player-list">
           {room.order.map((pid) => (
             <li key={pid}>
@@ -195,8 +199,17 @@ export default function Room({ code, onLeave }) {
       <div className="room-topbar">
         <button className="link" onClick={onLeave} type="button">← Выйти</button>
         <div className="room-code">Комната {code}</div>
-        <button className="chat-toggle" onClick={() => setChatOpen((v) => !v)} type="button">💬</button>
+        <div className="topbar-actions">
+          <button className="chat-toggle" onClick={() => setStatsOpen(true)} type="button" title="Статистика">📊</button>
+          <button className="chat-toggle" onClick={() => setChatOpen((v) => !v)} type="button">💬</button>
+        </div>
       </div>
+
+      {room.players[uid]?.eliminated && (
+        <div className="spectator-banner">Вы выбыли из игры — можно наблюдать за столом дальше</div>
+      )}
+
+      <VoiceChat code={code} uid={uid} players={room.players} />
 
       <div className="seats-ring" data-count={orderedOthers.length}>
         {orderedOthers.map((pid) => {
@@ -293,6 +306,16 @@ export default function Room({ code, onLeave }) {
               ))}
             </div>
             <button className="link" onClick={() => setPendingQueen(null)} type="button">Отмена</button>
+          </div>
+        </div>
+      )}
+
+      {statsOpen && (
+        <div className="modal-backdrop" onClick={() => setStatsOpen(false)}>
+          <div className="modal stats-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Статистика</h3>
+            <Scoreboard room={room} currentPlayerId={room.currentPlayerId} />
+            <button className="link" onClick={() => setStatsOpen(false)} type="button">Закрыть</button>
           </div>
         </div>
       )}

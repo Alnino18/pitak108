@@ -250,6 +250,44 @@ button { font-family: inherit; cursor: pointer; }
   color: var(--cream);
 }
 
+.voice-chat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+}
+.voice-btn {
+  background: rgba(212,175,55,0.15);
+  border: 1px solid var(--gold);
+  color: var(--cream);
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.voice-btn.on { background: var(--gold); color: var(--ink); }
+.voice-btn.muted { background: rgba(224,85,79,0.2); border-color: var(--danger); }
+.voice-active { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+.voice-participants { font-size: 0.75rem; opacity: 0.85; text-align: center; max-width: 300px; }
+.voice-error { font-size: 0.75rem; max-width: 300px; text-align: center; }
+
+.topbar-actions { display: flex; gap: 0.5rem; }
+
+.spectator-banner {
+  text-align: center;
+  background: rgba(212,175,55,0.15);
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  padding: 0.5rem 0.8rem;
+  margin: 0.4rem 0.8rem 0;
+  font-size: 0.85rem;
+}
+
+.stats-modal { max-width: 320px; width: 90vw; }
+.stats-modal .scoreboard { flex-direction: column; overflow-x: visible; align-items: stretch; }
+.stats-modal .scoreboard li { flex-direction: row; justify-content: space-between; }
+
 .seats-ring {
   display: flex;
   justify-content: center;
