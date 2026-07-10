@@ -322,6 +322,12 @@ button { font-family: inherit; cursor: pointer; }
   white-space: nowrap;
 }
 
+.table-error.round-banner {
+  background: rgba(212,175,55,0.95);
+  color: var(--ink);
+  font-weight: 700;
+}
+
 .hand-dock {
   padding: 0.4rem 0 1rem;
   display: flex;
@@ -484,6 +490,8 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 /* Chat drawer (floating, playing state) */
+.hand-hint { font-size: 0.75rem; text-align: center; max-width: 280px; }
+
 .chat-fab {
   position: fixed;
   right: 16px;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
 import {
   subscribeRoom,
@@ -8,7 +8,7 @@ import {
   passTurnInRoom,
   startNextRoundInRoom
 } from './roomApi';
-import { canPlay, drawPenaltyFor } from './rules';
+import { canPlay, matchesPendingKind } from './rules';
 import Card from './Card';
 import Chat from './Chat';
 
@@ -20,11 +20,25 @@ export default function Room({ code, onLeave }) {
   const [error, setError] = useState('');
   const [pendingQueen, setPendingQueen] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [roundBanner, setRoundBanner] = useState(null);
+  const lastRoundWinner = useRef(null);
 
   useEffect(() => {
     const unsub = subscribeRoom(code, setRoom);
     return unsub;
   }, [code]);
+
+  useEffect(() => {
+    if (!room?.roundWinnerId) return;
+    if (room.roundWinnerId === lastRoundWinner.current) return;
+    lastRoundWinner.current = room.roundWinnerId;
+    if (room.status === 'playing') {
+      const name = room.players[room.roundWinnerId]?.name || '?';
+      setRoundBanner(`Раунд выиграл(а): ${name} — новая раздача`);
+      const t = setTimeout(() => setRoundBanner(null), 3500);
+      return () => clearTimeout(t);
+    }
+  }, [room?.roundWinnerId, room?.status]);
 
   if (!room) return <div className="loading">Загружаем комнату…</div>;
 
@@ -116,10 +130,10 @@ export default function Room({ code, onLeave }) {
 
   // status === 'playing'
   const legal = room.pendingDraw > 0
-    ? myHand.filter((c) => drawPenaltyFor(c) > 0)
+    ? myHand.filter((c) => matchesPendingKind(c, room.pendingDrawKind))
     : myHand.filter((c) => canPlay(c, top, room.activeSuit));
-  const canDraw = isMyTurn;
-  const noLegalMoves = isMyTurn && legal.length === 0;
+  const canDraw = isMyTurn && (room.pendingDraw > 0 || !room.hasDrawn);
+  const canPass = isMyTurn && room.pendingDraw === 0 && room.hasDrawn;
 
   // Остальные игроки, начиная со следующего после меня — раскладываем по дуге сверху стола
   const others = room.order.filter((pid) => pid !== uid);
@@ -165,7 +179,13 @@ export default function Room({ code, onLeave }) {
         </div>
         <div className="pile-hints">
           {room.activeSuit && <span className="hint-chip">Масть: {room.activeSuit}</span>}
-          {room.pendingDraw > 0 && <span className="hint-chip danger">+{room.pendingDraw} карт</span>}
+          {room.pendingDraw > 0 && (
+            <span className="hint-chip danger">
+              +{room.pendingDraw} карт{room.pendingDrawKind ? ` (отбиться можно только ${
+                { '6': 'шестёркой', '7': 'семёркой', 'K♠': 'королём пик' }[room.pendingDrawKind]
+              })` : ''}
+            </span>
+          )}
         </div>
       </div>
 
@@ -174,6 +194,7 @@ export default function Room({ code, onLeave }) {
       </div>
 
       {error && <div className="table-error">{error}</div>}
+      {roundBanner && !error && <div className="table-error round-banner">{roundBanner}</div>}
 
       <div className="hand-dock">
         <div className="hand-fan" style={{ '--n': n }}>
@@ -202,12 +223,15 @@ export default function Room({ code, onLeave }) {
           <button className="fab" disabled={!canDraw} onClick={() => safe(() => drawCardInRoom(code, uid))} type="button">
             🂠<span className="fab-badge">{room.pendingDraw > 0 ? room.pendingDraw : '+1'}</span>
           </button>
-          {noLegalMoves && room.pendingDraw === 0 && (
+          {canPass && (
             <button className="secondary" onClick={() => safe(() => passTurnInRoom(code, uid))} type="button">
               Пропустить ход
             </button>
           )}
         </div>
+        {isMyTurn && room.hasDrawn && room.pendingDraw === 0 && (
+          <div className="muted hand-hint">Карту уже взяли — сыграйте её (если подходит) или пропустите ход</div>
+        )}
       </div>
 
       {pendingQueen && (

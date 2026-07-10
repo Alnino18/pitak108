@@ -1,7 +1,7 @@
 import { buildDeck, shuffle, handValue } from './deck';
-import { canPlay, drawPenaltyFor, isSkip } from './rules';
+import { canPlay, drawPenaltyFor, isSkip, penaltyKind, matchesPendingKind } from './rules';
 
-const HAND_SIZE = 4;
+const HAND_SIZE = 6;
 const RESET_SCORE = 107; // при таком счёте очки обнуляются
 const ELIMINATION_SCORE = 108; // при таком счёте (или больше) игрок выбывает
 
@@ -21,6 +21,8 @@ export function createRoom({ code, hostUid, hostName, hostAvatar }) {
     direction: 1,
     activeSuit: null,
     pendingDraw: 0,
+    pendingDrawKind: null,
+    hasDrawn: false,
     winnerId: null,
     roundWinnerId: null,
     updatedAt: Date.now()
@@ -41,17 +43,22 @@ export function addPlayer(room, uid, name, avatar) {
   };
 }
 
+function dealHands(active, handSize) {
+  let deck = shuffle(buildDeck());
+  const hands = {};
+  for (const uid of active) {
+    hands[uid] = deck.slice(0, handSize);
+    deck = deck.slice(handSize);
+  }
+  const discardTop = deck.pop();
+  return { deck, hands, discardTop };
+}
+
 export function startGame(room) {
   const active = room.order.filter((uid) => !room.players[uid]?.eliminated);
   if (active.length < 2) throw new Error('Нужно минимум 2 игрока');
 
-  let deck = shuffle(buildDeck());
-  const hands = {};
-  for (const uid of active) {
-    hands[uid] = deck.slice(0, HAND_SIZE);
-    deck = deck.slice(HAND_SIZE);
-  }
-  const discardTop = deck.pop();
+  const { deck, hands, discardTop } = dealHands(active, HAND_SIZE);
 
   return {
     ...room,
@@ -63,6 +70,8 @@ export function startGame(room) {
     direction: 1,
     activeSuit: null,
     pendingDraw: 0,
+    pendingDrawKind: null,
+    hasDrawn: false,
     winnerId: null,
     roundWinnerId: null
   };
@@ -97,10 +106,12 @@ export function playCard(room, uid, cardId, chosenSuit) {
 
   const top = topCard(room);
 
-  if (room.pendingDraw > 0 && drawPenaltyFor(card) === 0) {
-    throw new Error(`Сначала возьмите ${room.pendingDraw} карт(ы) или отбейтесь 6-кой/7-кой`);
-  }
-  if (!canPlay(card, top, room.activeSuit)) {
+  if (room.pendingDraw > 0) {
+    if (!matchesPendingKind(card, room.pendingDrawKind)) {
+      const names = { '6': 'шестёркой', '7': 'семёркой', 'K♠': 'королём пик' };
+      throw new Error(`Сначала возьмите ${room.pendingDraw} карт(ы) или отбейтесь ${names[room.pendingDrawKind] || 'такой же картой'}`);
+    }
+  } else if (!canPlay(card, top, room.activeSuit)) {
     throw new Error('Эта карта не подходит по масти/достоинству');
   }
   if (card.rank === 'Q' && !chosenSuit) {
@@ -115,11 +126,20 @@ export function playCard(room, uid, cardId, chosenSuit) {
   let currentPlayerId = uid;
   let direction = room.direction;
   let pendingDraw = room.pendingDraw > 0 ? room.pendingDraw : 0;
-  let activeSuit = card.rank === 'Q' ? chosenSuit : null;
+  let pendingDrawKind = room.pendingDraw > 0 ? room.pendingDrawKind : null;
 
-  // Спецэффекты
-  pendingDraw += drawPenaltyFor(card); // 6 -> +1, 7 -> +2
-  // 10 — обычная карта, разворота хода больше нет
+  // Масть, которую обязан положить следующий игрок: после дамы — выбранная,
+  // после восьмёрки — масть самой восьмёрки (строгое совпадение, не по рангу).
+  let activeSuit = null;
+  if (card.rank === 'Q') activeSuit = chosenSuit;
+  else if (card.rank === '8') activeSuit = card.suit;
+
+  // Спецэффекты: 6 -> +1, 7 -> +2, король пик -> +5 (штрафы одного вида не смешиваются)
+  const kind = penaltyKind(card);
+  if (kind) {
+    pendingDraw += drawPenaltyFor(card);
+    pendingDrawKind = kind;
+  }
 
   const handEmpty = newHand.length === 0;
 
@@ -156,22 +176,45 @@ export function playCard(room, uid, cardId, chosenSuit) {
     players = updatedPlayers;
 
     const stillActive = room.order.filter((pid) => !players[pid].eliminated);
+
     if (stillActive.length <= 1) {
       status = 'finished';
       winnerId = stillActive[0] || uid;
+      return {
+        ...room,
+        hands: { ...room.hands, [uid]: newHand },
+        discardPile,
+        players,
+        status,
+        winnerId,
+        roundWinnerId: uid,
+        activeSuit: null,
+        pendingDraw: 0,
+        pendingDrawKind: null,
+        hasDrawn: false,
+        direction
+      };
     }
+
+    // Игра продолжается — сразу раздаём карты для следующего раунда,
+    // ведёт победитель предыдущего раунда.
+    const { deck: newDeck, hands: newHands, discardTop: newDiscardTop } = dealHands(stillActive, HAND_SIZE);
 
     return {
       ...room,
-      hands: { ...room.hands, [uid]: newHand },
-      discardPile,
+      deck: newDeck,
+      hands: newHands,
+      discardPile: [newDiscardTop],
       players,
-      status,
-      winnerId,
+      status: 'playing',
+      winnerId: null,
       roundWinnerId: uid,
+      currentPlayerId: uid,
+      direction: 1,
       activeSuit: null,
       pendingDraw: 0,
-      direction
+      pendingDrawKind: null,
+      hasDrawn: false
     };
   }
 
@@ -189,7 +232,9 @@ export function playCard(room, uid, cardId, chosenSuit) {
     currentPlayerId,
     direction,
     activeSuit,
-    pendingDraw
+    pendingDraw,
+    pendingDrawKind,
+    hasDrawn: false
   };
 }
 
@@ -197,7 +242,12 @@ export function drawCard(room, uid) {
   if (room.status !== 'playing') throw new Error('Игра не идёт');
   if (room.currentPlayerId !== uid) throw new Error('Сейчас не ваш ход');
 
-  const count = room.pendingDraw > 0 ? room.pendingDraw : 1;
+  const forced = room.pendingDraw > 0;
+  if (!forced && room.hasDrawn) {
+    throw new Error('Можно взять только одну карту за ход — сыграйте её или пропустите ход');
+  }
+
+  const count = forced ? room.pendingDraw : 1;
   let { deck, discardPile } = reshuffleIfNeeded(room.deck, room.discardPile);
 
   const drawn = [];
@@ -210,7 +260,6 @@ export function drawCard(room, uid) {
   }
 
   const hand = [...(room.hands[uid] || []), ...drawn];
-  const wasForced = room.pendingDraw > 0;
 
   return {
     ...room,
@@ -218,13 +267,15 @@ export function drawCard(room, uid) {
     discardPile,
     hands: { ...room.hands, [uid]: hand },
     pendingDraw: 0,
-    currentPlayerId: wasForced ? nextPlayer(room, uid, room.direction) : room.currentPlayerId
+    pendingDrawKind: null,
+    hasDrawn: forced ? false : true,
+    currentPlayerId: forced ? nextPlayer(room, uid, room.direction) : room.currentPlayerId
   };
 }
 
 export function passTurn(room, uid) {
   if (room.currentPlayerId !== uid) throw new Error('Сейчас не ваш ход');
-  return { ...room, currentPlayerId: nextPlayer(room, uid, room.direction) };
+  return { ...room, currentPlayerId: nextPlayer(room, uid, room.direction), hasDrawn: false };
 }
 
 export function startNextRound(room) {
