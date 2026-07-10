@@ -23,6 +23,20 @@ service cloud.firestore {
         allow read: if signedIn();
         allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
       }
+
+      match /voicePeers/{peerId} {
+        allow read: if signedIn();
+        allow write: if signedIn() && request.auth.uid == peerId;
+      }
+
+      match /voiceSignals/{signalId} {
+        allow read, write: if signedIn();
+
+        match /candidates/{candidateId} {
+          allow read: if signedIn();
+          allow create: if signedIn() && request.resource.data.from == request.auth.uid;
+        }
+      }
     }
   }
 }
