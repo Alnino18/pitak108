@@ -21,7 +21,44 @@ export default function Room({ code, onLeave }) {
   const [pendingQueen, setPendingQueen] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [roundBanner, setRoundBanner] = useState(null);
+  const [shareStatus, setShareStatus] = useState('');
   const lastRoundWinner = useRef(null);
+
+  function inviteLink() {
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.searchParams.set('room', code);
+    return url.toString();
+  }
+
+  async function handleShare() {
+    const link = inviteLink();
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Акопчила 108', text: `Заходи в игру, код комнаты: ${code}`, url: link });
+        return;
+      } catch (e) {
+        // пользователь закрыл окно "поделиться" — просто предложим скопировать
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(link);
+      setShareStatus('Ссылка скопирована!');
+    } catch (e) {
+      setShareStatus(link);
+    }
+    setTimeout(() => setShareStatus(''), 2500);
+  }
+
+  async function handleCopyCode() {
+    try {
+      await navigator.clipboard.writeText(code);
+      setShareStatus('Код скопирован!');
+    } catch (e) {
+      setShareStatus(code);
+    }
+    setTimeout(() => setShareStatus(''), 2000);
+  }
 
   useEffect(() => {
     const unsub = subscribeRoom(code, setRoom);
@@ -77,10 +114,20 @@ export default function Room({ code, onLeave }) {
       <div className="room-screen">
         <div className="room-topbar">
           <button className="link" onClick={onLeave} type="button">← Выйти</button>
-          <div className="room-code">Код комнаты: <strong>{code}</strong></div>
         </div>
 
         <h2>Ждём игроков…</h2>
+
+        <div className="invite-box">
+          <div className="invite-code">{code}</div>
+          <div className="invite-actions">
+            <button className="primary" onClick={handleShare} type="button">🔗 Поделиться ссылкой</button>
+            <button className="secondary" onClick={handleCopyCode} type="button">Скопировать код</button>
+          </div>
+          {shareStatus && <div className="muted invite-status">{shareStatus}</div>}
+          <p className="muted">Друзья, перешедшие по ссылке, попадут в комнату сразу — код вводить не нужно.</p>
+        </div>
+
         <ul className="player-list">
           {room.order.map((pid) => (
             <li key={pid}>

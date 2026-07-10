@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { createRoomForUser, joinRoom } from './roomApi';
 
-export default function Lobby({ onEnterRoom }) {
+export default function Lobby({ onEnterRoom, joinError }) {
   const { user, profile, logout } = useAuth();
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
@@ -69,6 +69,9 @@ export default function Lobby({ onEnterRoom }) {
         </form>
       </div>
 
+      {joinError && (
+        <div className="error">Не удалось войти по ссылке: {joinError}</div>
+      )}
       {error && <div className="error">{error}</div>}
     </div>
   );
