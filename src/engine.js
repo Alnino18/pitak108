@@ -1,6 +1,7 @@
 import { buildDeck, shuffle, handValue } from './deck';
 import { canPlay, drawPenaltyFor, isSkip, penaltyKind, matchesPendingKind } from './rules';
 
+const MAX_PLAYERS = 12;
 const HAND_SIZE = 6;
 const RESET_SCORE = 107; // при таком счёте очки обнуляются
 const ELIMINATION_SCORE = 108; // при таком счёте (или больше) игрок выбывает
@@ -32,7 +33,7 @@ export function createRoom({ code, hostUid, hostName, hostAvatar }) {
 export function addPlayer(room, uid, name, avatar) {
   if (room.status !== 'lobby') throw new Error('Игра уже началась');
   if (room.order.includes(uid)) return room;
-  if (room.order.length >= 6) throw new Error('В комнате максимум 6 игроков');
+  if (room.order.length >= MAX_PLAYERS) throw new Error(`В комнате максимум ${MAX_PLAYERS} игроков`);
   return {
     ...room,
     order: [...room.order, uid],
@@ -44,7 +45,12 @@ export function addPlayer(room, uid, name, avatar) {
 }
 
 function dealHands(active, handSize) {
-  let deck = shuffle(buildDeck());
+  // Колода по умолчанию — 2 комплекта по 36 карт (72). Если игроков много (раздача
+  // по 6 карт при 12 игроках = 72 карты — впритык), автоматически берём колод больше,
+  // чтобы гарантированно хватило и на раздачу, и на добор в игре.
+  const needed = active.length * handSize + 24; // +запас на добор картами во время игры
+  const numDecks = Math.max(2, Math.ceil(needed / 36));
+  let deck = shuffle(buildDeck(numDecks));
   const hands = {};
   for (const uid of active) {
     hands[uid] = deck.slice(0, handSize);
@@ -128,11 +134,9 @@ export function playCard(room, uid, cardId, chosenSuit) {
   let pendingDraw = room.pendingDraw > 0 ? room.pendingDraw : 0;
   let pendingDrawKind = room.pendingDraw > 0 ? room.pendingDrawKind : null;
 
-  // Масть, которую обязан положить следующий игрок: после дамы — выбранная,
-  // после восьмёрки — масть самой восьмёрки (строгое совпадение, не по рангу).
-  let activeSuit = null;
-  if (card.rank === 'Q') activeSuit = chosenSuit;
-  else if (card.rank === '8') activeSuit = card.suit;
+  // Масть, которую обязан положить следующий игрок, назначает только дама (выбранная игроком).
+  // Восьмёрку теперь закрывает не масть, а другая восьмёрка (или дама) — см. canPlay в rules.js.
+  let activeSuit = card.rank === 'Q' ? chosenSuit : null;
 
   // Спецэффекты: 6 -> +1, 7 -> +2, король пик -> +5 (штрафы одного вида не смешиваются)
   const kind = penaltyKind(card);
@@ -157,6 +161,7 @@ export function playCard(room, uid, cardId, chosenSuit) {
         penalty = handValue(pHand);
       }
       let score = (updatedPlayers[pid].score || 0) + penalty;
+      score = Math.max(0, score);
       let eliminated = updatedPlayers[pid].eliminated;
       if (score === RESET_SCORE) {
         score = 0;

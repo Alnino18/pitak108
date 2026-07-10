@@ -98,7 +98,7 @@ export default function Room({ code, onLeave }) {
             onClick={() => safe(() => startGameInRoom(code))}
             type="button"
           >
-            Начать игру ({room.order.length}/6)
+            Начать игру ({room.order.length}/12)
           </button>
         ) : (
           <p className="muted">Ждём, пока хост начнёт игру.</p>
