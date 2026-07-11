@@ -32,6 +32,7 @@ export default function Room({ code, onLeave }) {
   const [roundBanner, setRoundBanner] = useState(null);
   const [shareStatus, setShareStatus] = useState('');
   const [statsOpen, setStatsOpen] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 400));
   const [floatingReactions, setFloatingReactions] = useState([]);
   const lastRoundWinner = useRef(null);
   const lastReactionId = useRef(null);
@@ -73,6 +74,12 @@ export default function Room({ code, onLeave }) {
     }
     setTimeout(() => setShareStatus(''), 2000);
   }
+
+  useEffect(() => {
+    function onResize() { setViewportWidth(window.innerWidth); }
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   useEffect(() => {
     const unsub = subscribeRoom(code, setRoom);
@@ -249,6 +256,14 @@ export default function Room({ code, onLeave }) {
   const n = myHand.length;
   const spread = Math.min(46, n * 7); // общий угол веера, шире руки — шире угол, но не более 46°
 
+  // Ширина/нахлёст карт подбираются так, чтобы веер всегда помещался в экран,
+  // даже если на руке скопилось много карт (после штрафных доборов).
+  const availableWidth = Math.min(viewportWidth, 480) - 24;
+  const small = n > 9;
+  const cardW = small ? 44 : 58;
+  const step = n > 1 ? Math.min(cardW - 8, Math.max(12, (availableWidth - cardW) / (n - 1))) : 0;
+  const overlap = cardW - step;
+
   const penaltyKindLabel = { '6': t('kindSix'), '7': t('kindSeven'), 'K♠': t('kindKing') };
 
   return (
@@ -334,10 +349,11 @@ export default function Room({ code, onLeave }) {
               <div
                 key={card.id}
                 className="fan-slot"
-                style={{ '--rot': `${rot}deg`, '--lift': `${lift}px`, zIndex: i }}
+                style={{ '--rot': `${rot}deg`, '--lift': `${lift}px`, '--overlap': `${overlap}px`, zIndex: i }}
               >
                 <Card
                   card={card}
+                  small={small}
                   onClick={() => handleCardClick(card)}
                   disabled={!isMyTurn || !legal.some((c) => c.id === card.id)}
                 />

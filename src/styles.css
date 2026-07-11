@@ -497,14 +497,16 @@ button { font-family: inherit; cursor: pointer; }
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  height: 96px;
+  height: 100px;
+  max-width: 100%;
+  overflow: visible;
   position: relative;
 }
 .fan-slot {
-  margin-left: -22px;
+  margin-left: calc(-1 * var(--overlap, 22px));
   transform: rotate(var(--rot)) translateY(var(--lift));
   transform-origin: bottom center;
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, margin-left 0.15s ease;
 }
 .fan-slot:first-child { margin-left: 0; }
 .fan-slot:hover { transform: rotate(var(--rot)) translateY(calc(var(--lift) - 10px)); }
@@ -562,7 +564,7 @@ button { font-family: inherit; cursor: pointer; }
 .card-sm { width: 44px; height: 64px; }
 .card-black { color: #1a1a1a; }
 .card-red { color: #c0272d; }
-.card-disabled { opacity: 0.45; filter: saturate(0.6); }
+.card-disabled { filter: grayscale(0.55) brightness(0.8); }
 
 .card-corner {
   position: absolute;
