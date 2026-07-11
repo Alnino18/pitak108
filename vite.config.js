@@ -27,5 +27,16 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,png,svg,ico}']
       }
     })
-  ]
+  ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Firebase SDK меняется редко — выносим отдельно, чтобы браузер
+          // не перекачивал его заново при каждом обновлении игры.
+          'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore']
+        }
+      }
+    }
+  }
 });

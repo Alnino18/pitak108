@@ -24,6 +24,21 @@ service cloud.firestore {
         allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
       }
 
+      match /reactions/{reactionId} {
+        allow read: if signedIn();
+        allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      }
+
+      // Карты на руке у каждого игрока — теперь отдельно от документа комнаты.
+      // Читать свою руку может только сам игрок (чужие карты не видны в Firestore).
+      // Запись оставлена открытой для любого участника комнаты — это нужно, чтобы
+      // текущий игрок мог раздавать карты остальным (новый раунд, штрафные добор карт).
+      // Как и вся остальная логика хода — это доверительная модель, см. комментарий выше.
+      match /hands/{handId} {
+        allow read: if signedIn() && request.auth.uid == handId;
+        allow write: if signedIn();
+      }
+
       match /voicePeers/{peerId} {
         allow read: if signedIn();
         allow write: if signedIn() && request.auth.uid == peerId;
