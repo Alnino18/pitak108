@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useAuth } from './AuthContext';
+import { useLang } from './LangContext';
+import LangSwitch from './LangSwitch';
 import { createRoomForUser, joinRoom } from './roomApi';
 
 export default function Lobby({ onEnterRoom, joinError }) {
   const { user, profile, logout } = useAuth();
+  const { t } = useLang();
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -43,34 +46,37 @@ export default function Lobby({ onEnterRoom, joinError }) {
           <span className="lobby-avatar">{profile?.avatar}</span>
           <span className="lobby-name">{profile?.displayName}</span>
         </div>
-        <button className="link" onClick={logout} type="button">Выйти</button>
+        <div className="lobby-header-actions">
+          <LangSwitch />
+          <button className="link" onClick={logout} type="button">{t('logout')}</button>
+        </div>
       </div>
 
-      <h1 className="brand">Акопчила 108</h1>
+      <h1 className="brand">{t('brand')}</h1>
 
       <div className="lobby-card">
-        <h2>Своя комната</h2>
-        <p className="muted">Создайте комнату и отправьте код друзьям — стол приватный, никто чужой не зайдёт.</p>
+        <h2>{t('ownRoomTitle')}</h2>
+        <p className="muted">{t('ownRoomDesc')}</p>
         <button className="primary" onClick={handleCreate} disabled={busy} type="button">
-          Создать комнату
+          {t('createRoom')}
         </button>
       </div>
 
       <div className="lobby-card">
-        <h2>Есть код?</h2>
+        <h2>{t('haveCodeTitle')}</h2>
         <form onSubmit={handleJoin} className="join-form">
           <input
             value={joinCode}
             onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-            placeholder="Код комнаты"
+            placeholder={t('roomCodePlaceholder')}
             maxLength={5}
           />
-          <button className="primary" type="submit" disabled={busy}>Войти</button>
+          <button className="primary" type="submit" disabled={busy}>{t('joinBtn')}</button>
         </form>
       </div>
 
       {joinError && (
-        <div className="error">Не удалось войти по ссылке: {joinError}</div>
+        <div className="error">{t('linkJoinFailed')}: {joinError}</div>
       )}
       {error && <div className="error">{error}</div>}
     </div>

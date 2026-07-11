@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from './AuthContext';
+import { useLang } from './LangContext';
+import LangSwitch from './LangSwitch';
 
 const AVATARS = ['🂡', '🃁', '🃑', '🂱', '🎴', '🀄'];
 
 export default function Login() {
   const { register, login } = useAuth();
+  const { t } = useLang();
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,11 +24,11 @@ export default function Login() {
       if (mode === 'login') {
         await login(email, password);
       } else {
-        if (!name.trim()) throw new Error('Введите имя');
+        if (!name.trim()) throw new Error(t('errEnterName'));
         await register(email, password, name.trim(), avatar);
       }
     } catch (err) {
-      setError(translateError(err));
+      setError(translateError(err, t));
     } finally {
       setBusy(false);
     }
@@ -33,22 +36,23 @@ export default function Login() {
 
   return (
     <div className="auth-screen">
-      <h1 className="brand">Акопчила 108</h1>
-      <p className="brand-sub">приватный стол для своих</p>
+      <LangSwitch className="lang-switch-top" />
+      <h1 className="brand">{t('brand')}</h1>
+      <p className="brand-sub">{t('brandSub')}</p>
 
       <div className="auth-tabs">
         <button className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')} type="button">
-          Вход
+          {t('tabLogin')}
         </button>
         <button className={mode === 'register' ? 'active' : ''} onClick={() => setMode('register')} type="button">
-          Регистрация
+          {t('tabRegister')}
         </button>
       </div>
 
       <form onSubmit={submit} className="auth-form">
         {mode === 'register' && (
           <>
-            <input placeholder="Ваше имя" value={name} onChange={(e) => setName(e.target.value)} required />
+            <input placeholder={t('yourName')} value={name} onChange={(e) => setName(e.target.value)} required />
             <div className="avatar-picker">
               {AVATARS.map((a) => (
                 <button
@@ -65,14 +69,14 @@ export default function Login() {
         )}
         <input
           type="email"
-          placeholder="Почта"
+          placeholder={t('email')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
         <input
           type="password"
-          placeholder="Пароль"
+          placeholder={t('password')}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -80,18 +84,18 @@ export default function Login() {
         />
         {error && <div className="error">{error}</div>}
         <button className="primary" type="submit" disabled={busy}>
-          {mode === 'login' ? 'Войти' : 'Создать аккаунт'}
+          {mode === 'login' ? t('btnLogin') : t('btnCreateAccount')}
         </button>
       </form>
     </div>
   );
 }
 
-function translateError(err) {
+function translateError(err, t) {
   const code = err?.code || '';
-  if (code.includes('email-already-in-use')) return 'Такая почта уже зарегистрирована';
-  if (code.includes('invalid-credential') || code.includes('wrong-password')) return 'Неверная почта или пароль';
-  if (code.includes('weak-password')) return 'Пароль слишком короткий (минимум 6 символов)';
-  if (code.includes('user-not-found')) return 'Пользователь не найден';
-  return err.message || 'Что-то пошло не так';
+  if (code.includes('email-already-in-use')) return t('errEmailInUse');
+  if (code.includes('invalid-credential') || code.includes('wrong-password')) return t('errWrongCreds');
+  if (code.includes('weak-password')) return t('errWeakPassword');
+  if (code.includes('user-not-found')) return t('errUserNotFound');
+  return err.message || t('errGeneric');
 }

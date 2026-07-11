@@ -202,6 +202,22 @@ button { font-family: inherit; cursor: pointer; }
 .invite-actions { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; }
 .invite-status { margin-top: 0.5rem; }
 
+.lobby-header-actions { display: flex; align-items: center; gap: 0.8rem; }
+
+.lang-switch { display: inline-flex; border: 1px solid rgba(244,239,227,0.3); border-radius: 999px; overflow: hidden; }
+.lang-switch button {
+  background: none;
+  border: none;
+  color: var(--cream);
+  padding: 0.3rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0.6;
+}
+.lang-switch button.active { background: var(--gold); color: var(--ink); opacity: 1; }
+.lang-switch-top { position: absolute; top: 1rem; right: 1rem; }
+.auth-screen { position: relative; }
+
 .player-list { list-style: none; padding: 0; }
 .player-list li {
   display: flex;

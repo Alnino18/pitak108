@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLang } from './LangContext';
 import {
   pairKey,
   subscribeVoicePeers,
@@ -14,6 +15,7 @@ import {
 const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
 
 export default function VoiceChat({ code, uid, players }) {
+  const { t } = useLang();
   const [joined, setJoined] = useState(false);
   const [muted, setMuted] = useState(false);
   const [peerIds, setPeerIds] = useState([]);
@@ -98,7 +100,7 @@ export default function VoiceChat({ code, uid, players }) {
           await pc.setRemoteDescription({ type: 'answer', sdp: data.answer });
         }
       } catch (e) {
-        setErr('Ошибка голосового соединения: ' + e.message);
+        setErr(t('voiceConnError') + ': ' + e.message);
       }
     });
 
@@ -115,7 +117,7 @@ export default function VoiceChat({ code, uid, players }) {
           await pc.setLocalDescription(offer);
           await writeSignal(code, key, { offer: offer.sdp });
         } catch (e) {
-          setErr('Не удалось начать голосовой звонок: ' + e.message);
+          setErr(t('voiceCallFailed') + ': ' + e.message);
         }
       })();
     }
@@ -129,7 +131,7 @@ export default function VoiceChat({ code, uid, players }) {
       await joinVoicePeers(code, uid);
       setJoined(true);
     } catch (e) {
-      setErr('Нет доступа к микрофону: ' + e.message);
+      setErr(t('voiceNoMic') + ': ' + e.message);
     }
   }
 
@@ -165,17 +167,17 @@ export default function VoiceChat({ code, uid, players }) {
   return (
     <div className="voice-chat">
       {!joined ? (
-        <button className="voice-btn" onClick={handleJoin} type="button">🎤 Войти в голосовой чат</button>
+        <button className="voice-btn" onClick={handleJoin} type="button">{t('voiceJoin')}</button>
       ) : (
         <div className="voice-active">
           <button className={`voice-btn ${muted ? 'muted' : 'on'}`} onClick={toggleMute} type="button">
-            {muted ? '🔇 Микрофон выкл.' : '🎤 Микрофон вкл.'}
+            {muted ? `🔇 ${t('voiceUnmute')}` : `🎤 ${t('voiceMute')}`}
           </button>
-          <button className="secondary" onClick={handleLeave} type="button">Выйти из голоса</button>
+          <button className="secondary" onClick={handleLeave} type="button">{t('voiceLeave')}</button>
           <div className="voice-participants">
             {connectedIds.length > 0
-              ? `На связи: ${connectedIds.map((id) => players?.[id]?.name || '?').join(', ')}`
-              : 'Ждём, пока подключатся остальные…'}
+              ? `${t('voiceOnCall')}: ${connectedIds.map((id) => players?.[id]?.name || '?').join(', ')}`
+              : t('voiceWaitingOthers')}
           </div>
         </div>
       )}

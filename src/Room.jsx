@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
+import { useLang } from './LangContext';
 import {
   subscribeRoom,
   startGameInRoom,
@@ -17,6 +18,7 @@ const SUITS = ['♠', '♥', '♦', '♣'];
 
 export default function Room({ code, onLeave }) {
   const { user, profile } = useAuth();
+  const { t } = useLang();
   const [room, setRoom] = useState(null);
   const [error, setError] = useState('');
   const [pendingQueen, setPendingQueen] = useState(null);
@@ -37,7 +39,7 @@ export default function Room({ code, onLeave }) {
     const link = inviteLink();
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Акопчила 108', text: `Заходи в игру, код комнаты: ${code}`, url: link });
+        await navigator.share({ title: t('brand'), text: t('shareText').replace('{code}', code), url: link });
         return;
       } catch (e) {
         // пользователь закрыл окно "поделиться" — просто предложим скопировать
@@ -45,7 +47,7 @@ export default function Room({ code, onLeave }) {
     }
     try {
       await navigator.clipboard.writeText(link);
-      setShareStatus('Ссылка скопирована!');
+      setShareStatus(t('linkCopied'));
     } catch (e) {
       setShareStatus(link);
     }
@@ -55,7 +57,7 @@ export default function Room({ code, onLeave }) {
   async function handleCopyCode() {
     try {
       await navigator.clipboard.writeText(code);
-      setShareStatus('Код скопирован!');
+      setShareStatus(t('codeCopied'));
     } catch (e) {
       setShareStatus(code);
     }
@@ -73,13 +75,14 @@ export default function Room({ code, onLeave }) {
     lastRoundWinner.current = room.roundWinnerId;
     if (room.status === 'playing') {
       const name = room.players[room.roundWinnerId]?.name || '?';
-      setRoundBanner(`Раунд выиграл(а): ${name} — новая раздача`);
-      const t = setTimeout(() => setRoundBanner(null), 3500);
-      return () => clearTimeout(t);
+      setRoundBanner(`${t('roundWonPrefix')} ${name} ${t('newDealSuffix')}`);
+      const timer = setTimeout(() => setRoundBanner(null), 3500);
+      return () => clearTimeout(timer);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.roundWinnerId, room?.status]);
 
-  if (!room) return <div className="loading">Загружаем комнату…</div>;
+  if (!room) return <div className="loading">{t('loadingRoom')}</div>;
 
   const uid = user.uid;
   const isHost = room.hostId === uid;
@@ -115,19 +118,19 @@ export default function Room({ code, onLeave }) {
     return (
       <div className="room-screen">
         <div className="room-topbar">
-          <button className="link" onClick={onLeave} type="button">← Выйти</button>
+          <button className="link" onClick={onLeave} type="button">← {t('back')}</button>
         </div>
 
-        <h2>Ждём игроков…</h2>
+        <h2>{t('waitingPlayers')}</h2>
 
         <div className="invite-box">
           <div className="invite-code">{code}</div>
           <div className="invite-actions">
-            <button className="primary" onClick={handleShare} type="button">🔗 Поделиться ссылкой</button>
-            <button className="secondary" onClick={handleCopyCode} type="button">Скопировать код</button>
+            <button className="primary" onClick={handleShare} type="button">{t('shareLink')}</button>
+            <button className="secondary" onClick={handleCopyCode} type="button">{t('copyCode')}</button>
           </div>
           {shareStatus && <div className="muted invite-status">{shareStatus}</div>}
-          <p className="muted">Друзья, перешедшие по ссылке, попадут в комнату сразу — код вводить не нужно.</p>
+          <p className="muted">{t('inviteHint')}</p>
         </div>
 
         <VoiceChat code={code} uid={uid} players={room.players} />
@@ -137,7 +140,7 @@ export default function Room({ code, onLeave }) {
             <li key={pid}>
               <span className="pl-avatar">{room.players[pid].avatar}</span>
               <span>{room.players[pid].name}</span>
-              {pid === room.hostId && <span className="tag">хост</span>}
+              {pid === room.hostId && <span className="tag">{t('host')}</span>}
             </li>
           ))}
         </ul>
@@ -149,14 +152,14 @@ export default function Room({ code, onLeave }) {
             onClick={() => safe(() => startGameInRoom(code))}
             type="button"
           >
-            Начать игру ({room.order.length}/12)
+            {t('startGame')} ({room.order.length}/12)
           </button>
         ) : (
-          <p className="muted">Ждём, пока хост начнёт игру.</p>
+          <p className="muted">{t('waitingHost')}</p>
         )}
         {error && <div className="error">{error}</div>}
 
-        <ChatDrawer code={code} uid={uid} name={profile.displayName} open={chatOpen} onToggle={() => setChatOpen((v) => !v)} />
+        <ChatDrawer code={code} uid={uid} name={profile.displayName} open={chatOpen} onToggle={() => setChatOpen((v) => !v)} t={t} />
       </div>
     );
   }
@@ -165,16 +168,16 @@ export default function Room({ code, onLeave }) {
     return (
       <div className="room-screen">
         <div className="room-topbar">
-          <button className="link" onClick={onLeave} type="button">← Выйти</button>
+          <button className="link" onClick={onLeave} type="button">← {t('back')}</button>
         </div>
-        <h2>🏆 Победитель: {room.players[room.winnerId]?.name}</h2>
-        <Scoreboard room={room} />
+        <h2>🏆 {t('winner')}: {room.players[room.winnerId]?.name}</h2>
+        <Scoreboard room={room} t={t} />
         {isHost && (
           <button className="primary" onClick={() => safe(() => startNextRoundInRoom(code))} type="button">
-            Играть ещё раз
+            {t('playAgain')}
           </button>
         )}
-        <ChatDrawer code={code} uid={uid} name={profile.displayName} open={chatOpen} onToggle={() => setChatOpen((v) => !v)} />
+        <ChatDrawer code={code} uid={uid} name={profile.displayName} open={chatOpen} onToggle={() => setChatOpen((v) => !v)} t={t} />
       </div>
     );
   }
@@ -194,19 +197,21 @@ export default function Room({ code, onLeave }) {
   const n = myHand.length;
   const spread = Math.min(46, n * 7); // общий угол веера, шире руки — шире угол, но не более 46°
 
+  const penaltyKindLabel = { '6': t('kindSix'), '7': t('kindSeven'), 'K♠': t('kindKing') };
+
   return (
     <div className="game-felt">
       <div className="room-topbar">
-        <button className="link" onClick={onLeave} type="button">← Выйти</button>
-        <div className="room-code">Комната {code}</div>
+        <button className="link" onClick={onLeave} type="button">← {t('back')}</button>
+        <div className="room-code">{t('room')} {code}</div>
         <div className="topbar-actions">
-          <button className="chat-toggle" onClick={() => setStatsOpen(true)} type="button" title="Статистика">📊</button>
+          <button className="chat-toggle" onClick={() => setStatsOpen(true)} type="button" title={t('stats')}>📊</button>
           <button className="chat-toggle" onClick={() => setChatOpen((v) => !v)} type="button">💬</button>
         </div>
       </div>
 
       {room.players[uid]?.eliminated && (
-        <div className="spectator-banner">Вы выбыли из игры — можно наблюдать за столом дальше</div>
+        <div className="spectator-banner">{t('spectatorBanner')}</div>
       )}
 
       <VoiceChat code={code} uid={uid} players={room.players} />
@@ -230,7 +235,7 @@ export default function Room({ code, onLeave }) {
       </div>
 
       <div className="center-pile">
-        <div className="pile-stack" title={`В колоде: ${room.deck?.length ?? 0}`}>
+        <div className="pile-stack" title={`${t('deckTitle')}: ${room.deck?.length ?? 0}`}>
           <Card faceDown small />
           <span className="pile-count">{room.deck?.length ?? 0}</span>
         </div>
@@ -238,19 +243,17 @@ export default function Room({ code, onLeave }) {
           {top && <Card card={top} disabled />}
         </div>
         <div className="pile-hints">
-          {room.activeSuit && <span className="hint-chip">Масть: {room.activeSuit}</span>}
+          {room.activeSuit && <span className="hint-chip">{t('suit')}: {room.activeSuit}</span>}
           {room.pendingDraw > 0 && (
             <span className="hint-chip danger">
-              +{room.pendingDraw} карт{room.pendingDrawKind ? ` (отбиться можно только ${
-                { '6': 'шестёркой', '7': 'семёркой', 'K♠': 'королём пик' }[room.pendingDrawKind]
-              })` : ''}
+              +{room.pendingDraw} {t('cardsWord')}{room.pendingDrawKind ? ` (${t('fightBackOnly')} ${penaltyKindLabel[room.pendingDrawKind]})` : ''}
             </span>
           )}
         </div>
       </div>
 
       <div className="turn-banner">
-        {isMyTurn ? <span className="my-turn">Ваш ход</span> : <span>Ходит: {room.players[room.currentPlayerId]?.name}</span>}
+        {isMyTurn ? <span className="my-turn">{t('yourTurn')}</span> : <span>{t('turnOf')}: {room.players[room.currentPlayerId]?.name}</span>}
       </div>
 
       {error && <div className="table-error">{error}</div>}
@@ -285,19 +288,19 @@ export default function Room({ code, onLeave }) {
           </button>
           {canPass && (
             <button className="secondary" onClick={() => safe(() => passTurnInRoom(code, uid))} type="button">
-              Пропустить ход
+              {t('skipTurn')}
             </button>
           )}
         </div>
         {isMyTurn && room.hasDrawn && room.pendingDraw === 0 && (
-          <div className="muted hand-hint">Карту уже взяли — сыграйте её (если подходит) или пропустите ход</div>
+          <div className="muted hand-hint">{t('alreadyDrewHint')}</div>
         )}
       </div>
 
       {pendingQueen && (
         <div className="modal-backdrop">
           <div className="modal">
-            <h3>Выберите масть</h3>
+            <h3>{t('chooseSuit')}</h3>
             <div className="suit-choices">
               {SUITS.map((s) => (
                 <button key={s} className={`suit-btn ${s === '♥' || s === '♦' ? 'red' : ''}`} onClick={() => chooseSuit(s)} type="button">
@@ -305,7 +308,7 @@ export default function Room({ code, onLeave }) {
                 </button>
               ))}
             </div>
-            <button className="link" onClick={() => setPendingQueen(null)} type="button">Отмена</button>
+            <button className="link" onClick={() => setPendingQueen(null)} type="button">{t('cancel')}</button>
           </div>
         </div>
       )}
@@ -313,19 +316,19 @@ export default function Room({ code, onLeave }) {
       {statsOpen && (
         <div className="modal-backdrop" onClick={() => setStatsOpen(false)}>
           <div className="modal stats-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Статистика</h3>
-            <Scoreboard room={room} currentPlayerId={room.currentPlayerId} />
-            <button className="link" onClick={() => setStatsOpen(false)} type="button">Закрыть</button>
+            <h3>{t('stats')}</h3>
+            <Scoreboard room={room} currentPlayerId={room.currentPlayerId} t={t} />
+            <button className="link" onClick={() => setStatsOpen(false)} type="button">{t('close')}</button>
           </div>
         </div>
       )}
 
-      <ChatDrawer code={code} uid={uid} name={profile.displayName} open={chatOpen} onToggle={() => setChatOpen((v) => !v)} />
+      <ChatDrawer code={code} uid={uid} name={profile.displayName} open={chatOpen} onToggle={() => setChatOpen((v) => !v)} t={t} />
     </div>
   );
 }
 
-function Scoreboard({ room, compact, currentPlayerId }) {
+function Scoreboard({ room, compact, currentPlayerId, t }) {
   return (
     <ul className={`scoreboard ${compact ? 'compact' : ''}`}>
       {room.order.map((pid) => {
@@ -335,7 +338,7 @@ function Scoreboard({ room, compact, currentPlayerId }) {
           <li key={pid} className={`${pid === currentPlayerId ? 'active' : ''} ${p.eliminated ? 'eliminated' : ''}`}>
             <span className="pl-avatar">{p.avatar}</span>
             <span className="pl-name">{p.name}</span>
-            <span className="pl-score">{p.score} очк.</span>
+            <span className="pl-score">{p.score} {t('scoreSuffix')}</span>
             {typeof cardCount === 'number' && <span className="pl-cards">🂠×{cardCount}</span>}
           </li>
         );
@@ -344,7 +347,7 @@ function Scoreboard({ room, compact, currentPlayerId }) {
   );
 }
 
-function ChatDrawer({ open, onToggle, ...chatProps }) {
+function ChatDrawer({ open, onToggle, t, ...chatProps }) {
   return (
     <>
       {!open && (
@@ -353,8 +356,8 @@ function ChatDrawer({ open, onToggle, ...chatProps }) {
       {open && (
         <div className="chat-drawer">
           <div className="chat-drawer-header">
-            <span>Чат</span>
-            <button className="link" onClick={onToggle} type="button">Закрыть ✕</button>
+            <span>{t('chat')}</span>
+            <button className="link" onClick={onToggle} type="button">{t('close')} ✕</button>
           </div>
           <Chat {...chatProps} />
         </div>

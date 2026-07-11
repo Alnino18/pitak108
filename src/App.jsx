@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
+import { useLang } from './LangContext';
 import Login from './Login';
 import CompleteProfile from './CompleteProfile';
 import Lobby from './Lobby';
@@ -15,6 +16,7 @@ function getRoomCodeFromUrl() {
 
 export default function App() {
   const { user, profile, loading } = useAuth();
+  const { t } = useLang();
   const [roomCode, setRoomCode] = useState(null);
   const [autoJoinCode, setAutoJoinCode] = useState(getRoomCodeFromUrl);
   const [autoJoinError, setAutoJoinError] = useState('');
@@ -47,7 +49,7 @@ export default function App() {
     return () => { cancelled = true; };
   }, [autoJoinCode, user, profile, autoJoining]);
 
-  if (loading) return <div className="loading">Загрузка…</div>;
+  if (loading) return <div className="loading">{t('loading') || 'Загрузка…'}</div>;
 
   return (
     <>
@@ -57,7 +59,7 @@ export default function App() {
       ) : !profile ? (
         <CompleteProfile />
       ) : autoJoinCode && autoJoining ? (
-        <div className="loading">Заходим в комнату {autoJoinCode}…</div>
+        <div className="loading">{(t('joiningRoom') || 'Заходим в комнату')} {autoJoinCode}…</div>
       ) : roomCode ? (
         <Room code={roomCode} onLeave={() => setRoomCode(null)} />
       ) : (

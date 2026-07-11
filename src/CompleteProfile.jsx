@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from './AuthContext';
+import { useLang } from './LangContext';
+import LangSwitch from './LangSwitch';
 
 const AVATARS = ['🂡', '🃁', '🃑', '🂱', '🎴', '🀄'];
 
 export default function CompleteProfile() {
   const { user, saveProfile, logout } = useAuth();
+  const { t } = useLang();
   const [name, setName] = useState(user?.displayName || '');
   const [avatar, setAvatar] = useState(AVATARS[0]);
   const [busy, setBusy] = useState(false);
@@ -26,11 +29,12 @@ export default function CompleteProfile() {
 
   return (
     <div className="auth-screen">
-      <h1 className="brand">Акопчила 108</h1>
-      <p className="brand-sub">завершите настройку профиля</p>
+      <LangSwitch className="lang-switch-top" />
+      <h1 className="brand">{t('brand')}</h1>
+      <p className="brand-sub">{t('completeProfileTitle')}</p>
 
       <form onSubmit={submit} className="auth-form">
-        <input placeholder="Ваше имя" value={name} onChange={(e) => setName(e.target.value)} required />
+        <input placeholder={t('yourName')} value={name} onChange={(e) => setName(e.target.value)} required />
         <div className="avatar-picker">
           {AVATARS.map((a) => (
             <button
@@ -44,8 +48,8 @@ export default function CompleteProfile() {
           ))}
         </div>
         {error && <div className="error">{error}</div>}
-        <button className="primary" type="submit" disabled={busy}>Готово</button>
-        <button className="link" type="button" onClick={logout}>Выйти и начать заново</button>
+        <button className="primary" type="submit" disabled={busy}>{t('done')}</button>
+        <button className="link" type="button" onClick={logout}>{t('logoutAndRestart')}</button>
       </form>
     </div>
   );

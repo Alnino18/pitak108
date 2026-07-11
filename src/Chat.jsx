@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { subscribeMessages, sendMessage } from './roomApi';
+import { useLang } from './LangContext';
 
 export default function Chat({ code, uid, name }) {
+  const { t } = useLang();
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const endRef = useRef(null);
@@ -38,7 +40,7 @@ export default function Chat({ code, uid, name }) {
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Написать в чат…"
+          placeholder={t('chatPlaceholder')}
           maxLength={300}
         />
         <button type="submit">➤</button>
