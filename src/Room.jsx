@@ -3,30 +3,40 @@ import { useAuth } from './AuthContext';
 import { useLang } from './LangContext';
 import {
   subscribeRoom,
+  subscribeMyHand,
   startGameInRoom,
   playCardInRoom,
   drawCardInRoom,
   passTurnInRoom,
-  startNextRoundInRoom
+  startNextRoundInRoom,
+  subscribeReactions,
+  sendReaction
 } from './roomApi';
 import { canPlay, matchesPendingKind } from './rules';
 import Card from './Card';
 import Chat from './Chat';
 import VoiceChat from './VoiceChat';
+import { playCardSound, drawCardSound, turnSound, winSound } from './sounds';
 
 const SUITS = ['♠', '♥', '♦', '♣'];
+const REACTION_EMOJIS = ['⚡', '😂', '👍', '😮', '🔥', '😢'];
 
 export default function Room({ code, onLeave }) {
   const { user, profile } = useAuth();
   const { t } = useLang();
   const [room, setRoom] = useState(null);
+  const [myHand, setMyHand] = useState([]);
   const [error, setError] = useState('');
   const [pendingQueen, setPendingQueen] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [roundBanner, setRoundBanner] = useState(null);
   const [shareStatus, setShareStatus] = useState('');
   const [statsOpen, setStatsOpen] = useState(false);
+  const [floatingReactions, setFloatingReactions] = useState([]);
   const lastRoundWinner = useRef(null);
+  const lastReactionId = useRef(null);
+  const wasMyTurn = useRef(false);
+  const wasFinished = useRef(false);
 
   function inviteLink() {
     const url = new URL(window.location.href);
@@ -70,6 +80,28 @@ export default function Room({ code, onLeave }) {
   }, [code]);
 
   useEffect(() => {
+    const unsub = subscribeMyHand(code, user.uid, setMyHand);
+    return unsub;
+  }, [code, user.uid]);
+
+  useEffect(() => {
+    const unsub = subscribeReactions(code, (list) => {
+      if (list.length === 0) return;
+      const newest = list[0];
+      if (newest.id === lastReactionId.current) return;
+      const firstLoad = lastReactionId.current === null;
+      lastReactionId.current = newest.id;
+      if (firstLoad) return; // не показываем всплывающими старые реакции при первом подключении
+      const item = { key: `${newest.id}-${Date.now()}`, emoji: newest.emoji };
+      setFloatingReactions((prev) => [...prev, item]);
+      setTimeout(() => {
+        setFloatingReactions((prev) => prev.filter((r) => r.key !== item.key));
+      }, 2200);
+    });
+    return unsub;
+  }, [code]);
+
+  useEffect(() => {
     if (!room?.roundWinnerId) return;
     if (room.roundWinnerId === lastRoundWinner.current) return;
     lastRoundWinner.current = room.roundWinnerId;
@@ -82,11 +114,25 @@ export default function Room({ code, onLeave }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.roundWinnerId, room?.status]);
 
+  useEffect(() => {
+    if (!room || room.status !== 'playing') return;
+    const isMyTurnNow = room.currentPlayerId === user.uid;
+    if (isMyTurnNow && !wasMyTurn.current) turnSound();
+    wasMyTurn.current = isMyTurnNow;
+  }, [room?.currentPlayerId, room?.status, user.uid]);
+
+  useEffect(() => {
+    if (room?.status === 'finished' && !wasFinished.current) {
+      wasFinished.current = true;
+      if (room.winnerId === user.uid) winSound();
+    }
+    if (room?.status !== 'finished') wasFinished.current = false;
+  }, [room?.status, room?.winnerId, user.uid]);
+
   if (!room) return <div className="loading">{t('loadingRoom')}</div>;
 
   const uid = user.uid;
   const isHost = room.hostId === uid;
-  const myHand = room.hands?.[uid] || [];
   const isMyTurn = room.currentPlayerId === uid;
   const top = room.discardPile?.[room.discardPile.length - 1];
 
@@ -105,13 +151,19 @@ export default function Room({ code, onLeave }) {
       setPendingQueen(card);
       return;
     }
-    safe(() => playCardInRoom(code, uid, card.id, null));
+    safe(async () => {
+      await playCardInRoom(code, uid, card.id, null);
+      playCardSound();
+    });
   }
 
   function chooseSuit(suit) {
     const card = pendingQueen;
     setPendingQueen(null);
-    safe(() => playCardInRoom(code, uid, card.id, suit));
+    safe(async () => {
+      await playCardInRoom(code, uid, card.id, suit);
+      playCardSound();
+    });
   }
 
   if (room.status === 'lobby') {
@@ -219,7 +271,7 @@ export default function Room({ code, onLeave }) {
       <div className="seats-ring" data-count={orderedOthers.length}>
         {orderedOthers.map((pid) => {
           const p = room.players[pid];
-          const cardCount = room.hands?.[pid]?.length ?? 0;
+          const cardCount = room.handCounts?.[pid] ?? 0;
           const active = pid === room.currentPlayerId;
           return (
             <div key={pid} className={`seat ${active ? 'active' : ''} ${p.eliminated ? 'eliminated' : ''}`}>
@@ -259,6 +311,18 @@ export default function Room({ code, onLeave }) {
       {error && <div className="table-error">{error}</div>}
       {roundBanner && !error && <div className="table-error round-banner">{roundBanner}</div>}
 
+      <div className="floating-reactions">
+        {floatingReactions.map((r) => (
+          <span key={r.key} className="floating-emoji">{r.emoji}</span>
+        ))}
+      </div>
+
+      <div className="reaction-bar">
+        {REACTION_EMOJIS.map((e) => (
+          <button key={e} className="reaction-btn" onClick={() => sendReaction(code, uid, e)} type="button">{e}</button>
+        ))}
+      </div>
+
       <div className="hand-dock">
         <div className="hand-fan" style={{ '--n': n }}>
           {myHand.map((card, i) => {
@@ -283,7 +347,7 @@ export default function Room({ code, onLeave }) {
         </div>
 
         <div className="hand-actions">
-          <button className="fab" disabled={!canDraw} onClick={() => safe(() => drawCardInRoom(code, uid))} type="button">
+          <button className="fab" disabled={!canDraw} onClick={() => safe(async () => { await drawCardInRoom(code, uid); drawCardSound(); })} type="button">
             🂠<span className="fab-badge">{room.pendingDraw > 0 ? room.pendingDraw : '+1'}</span>
           </button>
           {canPass && (
@@ -333,7 +397,7 @@ function Scoreboard({ room, compact, currentPlayerId, t }) {
     <ul className={`scoreboard ${compact ? 'compact' : ''}`}>
       {room.order.map((pid) => {
         const p = room.players[pid];
-        const cardCount = room.hands?.[pid]?.length;
+        const cardCount = room.handCounts?.[pid];
         return (
           <li key={pid} className={`${pid === currentPlayerId ? 'active' : ''} ${p.eliminated ? 'eliminated' : ''}`}>
             <span className="pl-avatar">{p.avatar}</span>

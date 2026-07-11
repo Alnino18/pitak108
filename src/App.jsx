@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense, lazy } from 'react';
 import { useAuth } from './AuthContext';
 import { useLang } from './LangContext';
 import Login from './Login';
 import CompleteProfile from './CompleteProfile';
 import Lobby from './Lobby';
-import Room from './Room';
 import InstallPrompt from './InstallPrompt';
-import { joinRoom } from './roomApi';
+
+// Room и всё, что ему нужно (движок игры, Firestore-обвязка, чат, голосовой чат),
+// грузятся отдельным куском только когда человек реально заходит в комнату —
+// это ускоряет самую первую загрузку (экран входа/лобби).
+const Room = lazy(() => import('./Room'));
 
 function getRoomCodeFromUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -32,6 +35,9 @@ export default function App() {
     setAutoJoinError('');
     (async () => {
       try {
+        // Динамический импорт — движок игры и Firestore-обвязка не грузятся,
+        // пока реально не понадобятся (сразу после входа/лобби).
+        const { joinRoom } = await import('./roomApi');
         const code = await joinRoom(autoJoinCode, user.uid, profile.displayName, profile.avatar);
         if (!cancelled) setRoomCode(code);
       } catch (err) {
@@ -61,7 +67,9 @@ export default function App() {
       ) : autoJoinCode && autoJoining ? (
         <div className="loading">{(t('joiningRoom') || 'Заходим в комнату')} {autoJoinCode}…</div>
       ) : roomCode ? (
-        <Room code={roomCode} onLeave={() => setRoomCode(null)} />
+        <Suspense fallback={<div className="loading">{t('loading') || 'Загрузка…'}</div>}>
+          <Room code={roomCode} onLeave={() => setRoomCode(null)} />
+        </Suspense>
       ) : (
         <Lobby onEnterRoom={setRoomCode} joinError={autoJoinError} />
       )}

@@ -3,10 +3,14 @@ import { canPlay, drawPenaltyFor, isSkip, mustPlayAgain, penaltyKind, matchesPen
 
 const MAX_PLAYERS = 12;
 const HAND_SIZE = 6;
-const RESET_SCORE = 107; // при таком счёте очки обнуляются
-const ELIMINATION_SCORE = 108; // при таком счёте (или больше) игрок выбывает
+const DEFAULT_ELIMINATION_SCORE = 108; // при таком счёте (или больше) игрок выбывает по умолчанию
 
-export function createRoom({ code, hostUid, hostName, hostAvatar }) {
+function scoreLimits(room) {
+  const eliminationScore = room?.settings?.eliminationScore || DEFAULT_ELIMINATION_SCORE;
+  return { eliminationScore, resetScore: eliminationScore - 1 };
+}
+
+export function createRoom({ code, hostUid, hostName, hostAvatar, eliminationScore }) {
   return {
     code,
     hostId: hostUid,
@@ -14,6 +18,9 @@ export function createRoom({ code, hostUid, hostName, hostAvatar }) {
     order: [hostUid],
     players: {
       [hostUid]: { name: hostName, avatar: hostAvatar || '🂡', score: 0, eliminated: false }
+    },
+    settings: {
+      eliminationScore: eliminationScore || DEFAULT_ELIMINATION_SCORE
     },
     deck: [],
     discardPile: [],
@@ -166,6 +173,7 @@ export function playCard(room, uid, cardId, chosenSuit) {
     }
 
     // Раунд окончен: считаем штрафы остальным игрокам
+    const { eliminationScore, resetScore } = scoreLimits(room);
     const updatedPlayers = { ...players };
     for (const pid of room.order) {
       if (pid === uid || updatedPlayers[pid].eliminated) continue;
@@ -183,9 +191,9 @@ export function playCard(room, uid, cardId, chosenSuit) {
       let score = (updatedPlayers[pid].score || 0) + penalty;
       score = Math.max(0, score);
       let eliminated = updatedPlayers[pid].eliminated;
-      if (score === RESET_SCORE) {
+      if (score === resetScore) {
         score = 0;
-      } else if (score >= ELIMINATION_SCORE) {
+      } else if (score >= eliminationScore) {
         eliminated = true;
       }
       updatedPlayers[pid] = { ...updatedPlayers[pid], score, eliminated };

@@ -202,6 +202,28 @@ button { font-family: inherit; cursor: pointer; }
 .invite-actions { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; }
 .invite-status { margin-top: 0.5rem; }
 
+.score-presets { margin: 0.7rem 0; }
+.preset-row { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
+.preset-chip {
+  background: rgba(244,239,227,0.08);
+  border: 1px solid rgba(244,239,227,0.3);
+  color: var(--cream);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.preset-chip.chosen { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+.sound-toggle {
+  background: none;
+  border: 1px solid rgba(244,239,227,0.3);
+  border-radius: 999px;
+  width: 34px;
+  height: 34px;
+  font-size: 1rem;
+  color: var(--cream);
+}
+
 .lobby-header-actions { display: flex; align-items: center; gap: 0.8rem; }
 
 .lang-switch { display: inline-flex; border: 1px solid rgba(244,239,227,0.3); border-radius: 999px; overflow: hidden; }
@@ -423,6 +445,45 @@ button { font-family: inherit; cursor: pointer; }
   background: rgba(212,175,55,0.95);
   color: var(--ink);
   font-weight: 700;
+}
+
+.reaction-bar {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+  padding: 0.2rem 0 0.4rem;
+  flex-wrap: wrap;
+}
+.reaction-btn {
+  background: rgba(244,239,227,0.08);
+  border: 1px solid rgba(244,239,227,0.25);
+  border-radius: 999px;
+  width: 34px;
+  height: 34px;
+  font-size: 1.05rem;
+  transition: transform 0.1s ease;
+}
+.reaction-btn:active { transform: scale(0.85); }
+
+.floating-reactions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 130px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 4;
+}
+.floating-emoji {
+  position: absolute;
+  font-size: 1.8rem;
+  animation: floatUp 2.2s ease-out forwards;
+}
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(0.7); opacity: 0; }
+  15% { opacity: 1; transform: translateY(-10px) scale(1.15); }
+  100% { transform: translateY(-90px) scale(1); opacity: 0; }
 }
 
 .hand-dock {

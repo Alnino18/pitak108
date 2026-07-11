@@ -90,7 +90,10 @@ export const translations = {
     deckTitle: 'В колоде',
     scoreSuffix: 'очк.',
     loading: 'Загрузка…',
-    joiningRoom: 'Заходим в комнату'
+    joiningRoom: 'Заходим в комнату',
+    scoreLimitLabel: 'Очков до вылета',
+    sound: 'Звук',
+    reactionsHint: 'Реакции'
   },
   uz: {
     brand: 'Акопчила 108',
@@ -182,7 +185,10 @@ export const translations = {
     deckTitle: 'Колодада',
     scoreSuffix: 'очко',
     loading: 'Юкланмоқда…',
-    joiningRoom: 'Хонага киришмоқда'
+    joiningRoom: 'Хонага киришмоқда',
+    scoreLimitLabel: "Вилиш учун очко",
+    sound: 'Товуш',
+    reactionsHint: 'Реакциялар'
   }
 };
 
