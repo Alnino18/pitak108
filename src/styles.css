@@ -534,7 +534,7 @@ button { font-family: inherit; cursor: pointer; }
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  height: 100px;
+  height: 122px;
   max-width: 100%;
   overflow: visible;
   position: relative;
@@ -595,9 +595,9 @@ button { font-family: inherit; cursor: pointer; }
 
 .card {
   position: relative;
-  width: 58px;
-  height: 84px;
-  border-radius: 9px;
+  width: 74px;
+  height: 106px;
+  border-radius: 10px;
   border: none;
   background: linear-gradient(160deg, #ffffff 0%, var(--cream) 100%);
   display: flex;
@@ -606,7 +606,7 @@ button { font-family: inherit; cursor: pointer; }
   padding: 4px;
   box-shadow: 0 3px 6px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(0,0,0,0.06);
 }
-.card-sm { width: 44px; height: 64px; }
+.card-sm { width: 58px; height: 84px; }
 .card-black { color: #1a1a1a; }
 .card-red { color: #c0272d; }
 .card-disabled { filter: grayscale(0.55) brightness(0.8); }
@@ -618,19 +618,19 @@ button { font-family: inherit; cursor: pointer; }
   align-items: center;
   line-height: 0.85;
   font-weight: 800;
-  font-size: 0.78rem;
+  font-size: 0.95rem;
 }
-.card-corner-top { top: 4px; left: 5px; }
-.card-corner-bottom { bottom: 4px; right: 5px; transform: rotate(180deg); }
-.card-sm .card-corner { font-size: 0.62rem; }
+.card-corner-top { top: 5px; left: 6px; }
+.card-corner-bottom { bottom: 5px; right: 6px; transform: rotate(180deg); }
+.card-sm .card-corner { font-size: 0.78rem; }
 .corner-suit { font-size: 0.85em; margin-top: 1px; }
 
 .card-center-suit {
-  font-size: 1.7rem;
+  font-size: 2.1rem;
   opacity: 0.92;
   filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15));
 }
-.card-sm .card-center-suit { font-size: 1.25rem; }
+.card-sm .card-center-suit { font-size: 1.6rem; }
 
 .card-back {
   background:

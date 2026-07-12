@@ -279,9 +279,9 @@ export default function Room({ code, onLeave }) {
   // Ширина/нахлёст карт подбираются так, чтобы веер всегда помещался в экран,
   // даже если на руке скопилось много карт (после штрафных доборов).
   const availableWidth = Math.min(viewportWidth, 480) - 24;
-  const small = n > 9;
-  const cardW = small ? 44 : 58;
-  const step = n > 1 ? Math.min(cardW - 8, Math.max(12, (availableWidth - cardW) / (n - 1))) : 0;
+  const small = n > 8;
+  const cardW = small ? 58 : 74;
+  const step = n > 1 ? Math.min(cardW - 10, Math.max(16, (availableWidth - cardW) / (n - 1))) : 0;
   const overlap = cardW - step;
 
   const penaltyKindLabel = { '6': t('kindSix'), '7': t('kindSeven'), 'K♠': t('kindKing') };
