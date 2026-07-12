@@ -422,13 +422,17 @@ button { font-family: inherit; cursor: pointer; }
 .center-pile {
   flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
   position: relative;
+  min-height: 100px;
 }
-.pile-stack { position: relative; }
+.pile-stack {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+}
 .pile-count {
   position: absolute;
   bottom: -8px;
@@ -441,7 +445,7 @@ button { font-family: inherit; cursor: pointer; }
   padding: 0.05rem 0.4rem;
 }
 .discard-slot { transform: translateY(-4px) rotate(-3deg); }
-.pile-hints { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: center; }
+.pile-hints { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: center; margin-bottom: 0.3rem; }
 .hint-chip {
   font-size: 0.72rem;
   background: rgba(212,175,55,0.15);
@@ -540,6 +544,14 @@ button { font-family: inherit; cursor: pointer; }
   transform: rotate(var(--rot)) translateY(var(--lift));
   transform-origin: bottom center;
   transition: transform 0.15s ease, margin-left 0.15s ease;
+}
+.fan-slot.dealt-in {
+  animation: dealIn 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+}
+@keyframes dealIn {
+  0% { opacity: 0; transform: translate(-60px, -70px) rotate(-25deg) scale(0.7); }
+  70% { opacity: 1; }
+  100% { opacity: 1; transform: rotate(var(--rot)) translateY(var(--lift)) scale(1); }
 }
 .fan-slot:first-child { margin-left: 0; }
 .fan-slot:hover { transform: rotate(var(--rot)) translateY(calc(var(--lift) - 10px)); }

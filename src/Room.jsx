@@ -16,7 +16,7 @@ import { canPlay, matchesPendingKind } from './rules';
 import Card from './Card';
 import Chat from './Chat';
 import VoiceChat from './VoiceChat';
-import { playCardSound, drawCardSound, turnSound, winSound } from './sounds';
+import { playCardSound, drawCardSound, turnSound, winSound, dealSound } from './sounds';
 
 const SUITS = ['♠', '♥', '♦', '♣'];
 const REACTION_EMOJIS = ['⚡', '😂', '👍', '😮', '🔥', '😢'];
@@ -34,10 +34,12 @@ export default function Room({ code, onLeave }) {
   const [statsOpen, setStatsOpen] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 400));
   const [floatingReactions, setFloatingReactions] = useState([]);
+  const [justDealt, setJustDealt] = useState(false);
   const lastRoundWinner = useRef(null);
   const lastReactionId = useRef(null);
   const wasMyTurn = useRef(false);
   const wasFinished = useRef(false);
+  const dealSignature = useRef(null);
 
   function inviteLink() {
     const url = new URL(window.location.href);
@@ -135,6 +137,19 @@ export default function Room({ code, onLeave }) {
     }
     if (room?.status !== 'finished') wasFinished.current = false;
   }, [room?.status, room?.winnerId, user.uid]);
+
+  useEffect(() => {
+    if (!room || room.status !== 'playing') return;
+    const sig = room.discardPile && room.discardPile.length === 1 ? room.discardPile[0].id : null;
+    if (!sig || sig === dealSignature.current) return;
+    const firstLoad = dealSignature.current === null;
+    dealSignature.current = sig;
+    if (firstLoad) return; // не проигрываем звук, если просто открыли уже идущую игру
+    setJustDealt(true);
+    dealSound(6);
+    const timer = setTimeout(() => setJustDealt(false), 900);
+    return () => clearTimeout(timer);
+  }, [room?.discardPile, room?.status]);
 
   if (!room) return <div className="loading">{t('loadingRoom')}</div>;
 
@@ -322,14 +337,14 @@ export default function Room({ code, onLeave }) {
         <div className="discard-slot">
           {top && <Card card={top} disabled />}
         </div>
-        <div className="pile-hints">
-          {room.activeSuit && <span className="hint-chip">{t('suit')}: {room.activeSuit}</span>}
-          {room.pendingDraw > 0 && (
-            <span className="hint-chip danger">
-              +{room.pendingDraw} {t('cardsWord')}{room.pendingDrawKind ? ` (${t('fightBackOnly')} ${penaltyKindLabel[room.pendingDrawKind]})` : ''}
-            </span>
-          )}
-        </div>
+      </div>
+      <div className="pile-hints">
+        {room.activeSuit && <span className="hint-chip">{t('suit')}: {room.activeSuit}</span>}
+        {room.pendingDraw > 0 && (
+          <span className="hint-chip danger">
+            +{room.pendingDraw} {t('cardsWord')}{room.pendingDrawKind ? ` (${t('fightBackOnly')} ${penaltyKindLabel[room.pendingDrawKind]})` : ''}
+          </span>
+        )}
       </div>
 
       <div className="turn-banner">
@@ -361,8 +376,14 @@ export default function Room({ code, onLeave }) {
             return (
               <div
                 key={card.id}
-                className="fan-slot"
-                style={{ '--rot': `${rot}deg`, '--lift': `${lift}px`, '--overlap': `${overlap}px`, zIndex: i }}
+                className={`fan-slot ${justDealt ? 'dealt-in' : ''}`}
+                style={{
+                  '--rot': `${rot}deg`,
+                  '--lift': `${lift}px`,
+                  '--overlap': `${overlap}px`,
+                  animationDelay: justDealt ? `${i * 0.07}s` : '0s',
+                  zIndex: i
+                }}
               >
                 <Card
                   card={card}

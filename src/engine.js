@@ -64,7 +64,7 @@ export function addPlayer(room, uid, name, avatar) {
   };
 }
 
-function dealHands(active, handSize, mode) {
+function dealHands(active, handSize, mode, leaderUid) {
   // Классический режим — 2+ комплекта по 36 карт (масштабируется под число игроков).
   // Быстрый режим ('quick') — ровно одна колода 36 карт, если игрокам хватает места,
   // иначе тоже подстраховываемся дополнительной колодой.
@@ -81,8 +81,19 @@ function dealHands(active, handSize, mode) {
     hands[uid] = deck.slice(0, handSize);
     deck = deck.slice(handSize);
   }
-  const discardTop = deck.pop();
-  return { deck, hands, discardTop };
+  // Ведущий игрок (leaderUid) автоматически выкладывает одну карту из своей руки —
+  // именно она открывает раунд. У ведущего остаётся handSize-1 карт, у остальных — handSize.
+  const leader = leaderUid && hands[leaderUid] ? leaderUid : active[0];
+  const leaderHand = hands[leader];
+  const discardTop = leaderHand[0];
+  hands[leader] = leaderHand.slice(1);
+  return { deck, hands, discardTop, leader };
+}
+
+function afterInOrder(list, uid) {
+  const idx = list.indexOf(uid);
+  if (idx === -1) return list[0];
+  return list[(idx + 1) % list.length];
 }
 
 export function startGame(room) {
@@ -90,7 +101,8 @@ export function startGame(room) {
   if (active.length < 2) throw new Error('Нужно минимум 2 игрока');
 
   const mode = room.settings?.mode || 'classic';
-  const { deck, hands, discardTop } = dealHands(active, HAND_SIZE, mode);
+  const leaderUid = active[0];
+  const { deck, hands, discardTop, leader } = dealHands(active, HAND_SIZE, mode, leaderUid);
 
   return {
     ...room,
@@ -98,7 +110,7 @@ export function startGame(room) {
     deck,
     hands,
     discardPile: [discardTop],
-    currentPlayerId: active[0],
+    currentPlayerId: afterInOrder(active, leader),
     direction: 1,
     activeSuit: null,
     pendingDraw: 0,
@@ -287,8 +299,8 @@ export function playCard(room, uid, cardId, chosenSuit) {
     }
 
     // Игра продолжается — сразу раздаём карты для следующего раунда,
-    // ведёт победитель предыдущего раунда.
-    const { deck: newDeck, hands: newHands, discardTop: newDiscardTop } = dealHands(stillActive, HAND_SIZE, room.settings?.mode);
+    // ведёт (и автоматически открывает раунд одной картой) победитель предыдущего раунда.
+    const { deck: newDeck, hands: newHands, discardTop: newDiscardTop, leader } = dealHands(stillActive, HAND_SIZE, room.settings?.mode, uid);
 
     return {
       ...room,
@@ -300,7 +312,7 @@ export function playCard(room, uid, cardId, chosenSuit) {
       status: 'playing',
       winnerId: null,
       roundWinnerId: uid,
-      currentPlayerId: uid,
+      currentPlayerId: afterInOrder(stillActive, leader),
       direction: 1,
       activeSuit: null,
       pendingDraw: 0,
