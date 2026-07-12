@@ -10,7 +10,7 @@ function scoreLimits(room) {
   return { eliminationScore, resetScore: eliminationScore - 1 };
 }
 
-export function createRoom({ code, hostUid, hostName, hostAvatar, eliminationScore }) {
+export function createRoom({ code, hostUid, hostName, hostAvatar, eliminationScore, mode }) {
   return {
     code,
     hostId: hostUid,
@@ -20,7 +20,8 @@ export function createRoom({ code, hostUid, hostName, hostAvatar, eliminationSco
       [hostUid]: { name: hostName, avatar: hostAvatar || '🂡', score: 0, eliminated: false }
     },
     settings: {
-      eliminationScore: eliminationScore || DEFAULT_ELIMINATION_SCORE
+      eliminationScore: eliminationScore || DEFAULT_ELIMINATION_SCORE,
+      mode: mode === 'quick' ? 'quick' : 'classic' // 'classic' — до eliminationScore очков, 'quick' — 36 карт, один раунд
     },
     deck: [],
     discardPile: [],
@@ -31,6 +32,8 @@ export function createRoom({ code, hostUid, hostName, hostAvatar, eliminationSco
     pendingDraw: 0,
     pendingDrawKind: null,
     hasDrawn: false,
+    drawCount: 0,
+    pendingJoiners: [], // подключились посреди игры — играют со следующего раунда
     winnerId: null,
     roundWinnerId: null,
     updatedAt: Date.now()
@@ -38,25 +41,40 @@ export function createRoom({ code, hostUid, hostName, hostAvatar, eliminationSco
 }
 
 export function addPlayer(room, uid, name, avatar) {
-  if (room.status !== 'lobby') throw new Error('Игра уже началась');
-  if (room.order.includes(uid)) return room;
-  if (room.order.length >= MAX_PLAYERS) throw new Error(`В комнате максимум ${MAX_PLAYERS} игроков`);
+  if (room.order.includes(uid) || (room.pendingJoiners || []).some((p) => p.uid === uid)) return room;
+  const total = room.order.length + (room.pendingJoiners || []).length;
+  if (total >= MAX_PLAYERS) throw new Error(`В комнате максимум ${MAX_PLAYERS} игроков`);
+
+  if (room.status === 'lobby' || room.status === 'finished') {
+    // Игра не идёт — присоединяемся сразу как полноценный игрок.
+    return {
+      ...room,
+      order: [...room.order, uid],
+      players: {
+        ...room.players,
+        [uid]: { name, avatar: avatar || '🂡', score: 0, eliminated: false }
+      }
+    };
+  }
+
+  // Игра уже идёт — становимся зрителем и вступаем в игру со следующего раунда.
   return {
     ...room,
-    order: [...room.order, uid],
-    players: {
-      ...room.players,
-      [uid]: { name, avatar: avatar || '🂡', score: 0, eliminated: false }
-    }
+    pendingJoiners: [...(room.pendingJoiners || []), { uid, name, avatar: avatar || '🂡' }]
   };
 }
 
-function dealHands(active, handSize) {
-  // Колода по умолчанию — 2 комплекта по 36 карт (72). Если игроков много (раздача
-  // по 6 карт при 12 игроках = 72 карты — впритык), автоматически берём колод больше,
-  // чтобы гарантированно хватило и на раздачу, и на добор в игре.
+function dealHands(active, handSize, mode) {
+  // Классический режим — 2+ комплекта по 36 карт (масштабируется под число игроков).
+  // Быстрый режим ('quick') — ровно одна колода 36 карт, если игрокам хватает места,
+  // иначе тоже подстраховываемся дополнительной колодой.
   const needed = active.length * handSize + 24; // +запас на добор картами во время игры
-  const numDecks = Math.max(2, Math.ceil(needed / 36));
+  let numDecks;
+  if (mode === 'quick' && active.length * handSize + 4 <= 36) {
+    numDecks = 1;
+  } else {
+    numDecks = Math.max(2, Math.ceil(needed / 36));
+  }
   let deck = shuffle(buildDeck(numDecks));
   const hands = {};
   for (const uid of active) {
@@ -71,7 +89,8 @@ export function startGame(room) {
   const active = room.order.filter((uid) => !room.players[uid]?.eliminated);
   if (active.length < 2) throw new Error('Нужно минимум 2 игрока');
 
-  const { deck, hands, discardTop } = dealHands(active, HAND_SIZE);
+  const mode = room.settings?.mode || 'classic';
+  const { deck, hands, discardTop } = dealHands(active, HAND_SIZE, mode);
 
   return {
     ...room,
@@ -85,6 +104,7 @@ export function startGame(room) {
     pendingDraw: 0,
     pendingDrawKind: null,
     hasDrawn: false,
+    drawCount: 0,
     winnerId: null,
     roundWinnerId: null
   };
@@ -154,6 +174,24 @@ export function playCard(room, uid, cardId, chosenSuit) {
 
   const handEmpty = newHand.length === 0;
 
+  if (handEmpty && (room.settings?.mode === 'quick')) {
+    // Быстрый режим: раунд один, очки не считаем — кто первый вышел, тот и выиграл.
+    return {
+      ...room,
+      hands: { ...room.hands, [uid]: newHand },
+      discardPile,
+      status: 'finished',
+      winnerId: uid,
+      roundWinnerId: uid,
+      activeSuit: null,
+      pendingDraw: 0,
+      pendingDrawKind: null,
+      hasDrawn: false,
+      drawCount: 0,
+      direction
+    };
+  }
+
   if (handEmpty) {
     // Если раунд завершён карой 6/7/королём пик — следующий игрок обязан взять
     // положенный штраф ПЕРЕД тем, как очки будут подсчитаны (штрафные карты входят в подсчёт).
@@ -208,13 +246,30 @@ export function playCard(room, uid, cardId, chosenSuit) {
 
     players = updatedPlayers;
 
-    const stillActive = room.order.filter((pid) => !players[pid].eliminated);
+    // Игроки, подключившиеся посреди игры (зрители), вступают в игру именно сейчас —
+    // на старте нового раунда. В классическом режиме им ставится счёт на 1 больше,
+    // чем у лидера по очкам — чтобы не давать несправедливое преимущество "с нуля".
+    let order = room.order;
+    const pendingJoiners = room.pendingJoiners || [];
+    if (pendingJoiners.length > 0) {
+      const { eliminationScore } = scoreLimits(room);
+      const isQuick = room.settings?.mode === 'quick';
+      const maxScore = order.reduce((m, pid) => Math.max(m, players[pid]?.score || 0), 0);
+      const startScore = isQuick ? 0 : Math.min(eliminationScore - 1, maxScore + 1);
+      for (const pj of pendingJoiners) {
+        order = [...order, pj.uid];
+        players = { ...players, [pj.uid]: { name: pj.name, avatar: pj.avatar, score: startScore, eliminated: false } };
+      }
+    }
+
+    const stillActive = order.filter((pid) => !players[pid].eliminated);
 
     if (stillActive.length <= 1) {
       status = 'finished';
       winnerId = stillActive[0] || uid;
       return {
         ...room,
+        order,
         hands: { ...room.hands, [uid]: newHand },
         discardPile,
         players,
@@ -225,16 +280,19 @@ export function playCard(room, uid, cardId, chosenSuit) {
         pendingDraw: 0,
         pendingDrawKind: null,
         hasDrawn: false,
+        drawCount: 0,
+        pendingJoiners: [],
         direction
       };
     }
 
     // Игра продолжается — сразу раздаём карты для следующего раунда,
     // ведёт победитель предыдущего раунда.
-    const { deck: newDeck, hands: newHands, discardTop: newDiscardTop } = dealHands(stillActive, HAND_SIZE);
+    const { deck: newDeck, hands: newHands, discardTop: newDiscardTop } = dealHands(stillActive, HAND_SIZE, room.settings?.mode);
 
     return {
       ...room,
+      order,
       deck: newDeck,
       hands: newHands,
       discardPile: [newDiscardTop],
@@ -247,7 +305,9 @@ export function playCard(room, uid, cardId, chosenSuit) {
       activeSuit: null,
       pendingDraw: 0,
       pendingDrawKind: null,
-      hasDrawn: false
+      hasDrawn: false,
+      drawCount: 0,
+      pendingJoiners: []
     };
   }
 
@@ -271,7 +331,8 @@ export function playCard(room, uid, cardId, chosenSuit) {
     activeSuit,
     pendingDraw,
     pendingDrawKind,
-    hasDrawn: false
+    hasDrawn: false,
+    drawCount: 0
   };
 }
 
@@ -280,8 +341,13 @@ export function drawCard(room, uid) {
   if (room.currentPlayerId !== uid) throw new Error('Сейчас не ваш ход');
 
   const forced = room.pendingDraw > 0;
-  if (!forced && room.hasDrawn) {
-    throw new Error('Можно взять только одну карту за ход — сыграйте её или пропустите ход');
+  const top = topCard(room);
+  // После восьмёрки разрешаем до 3 попыток добрать нужную карту (вместо обычной одной).
+  const maxDraws = top && top.rank === '8' ? 3 : 1;
+  const currentDrawCount = room.drawCount || 0;
+
+  if (!forced && currentDrawCount >= maxDraws) {
+    throw new Error(`Можно взять максимум ${maxDraws} карт(ы) за ход — сыграйте подходящую карту или пропустите ход`);
   }
 
   const count = forced ? room.pendingDraw : 1;
@@ -297,6 +363,7 @@ export function drawCard(room, uid) {
   }
 
   const hand = [...(room.hands[uid] || []), ...drawn];
+  const newDrawCount = forced ? 0 : currentDrawCount + 1;
 
   return {
     ...room,
@@ -306,13 +373,14 @@ export function drawCard(room, uid) {
     pendingDraw: 0,
     pendingDrawKind: null,
     hasDrawn: forced ? false : true,
+    drawCount: newDrawCount,
     currentPlayerId: forced ? nextPlayer(room, uid, room.direction) : room.currentPlayerId
   };
 }
 
 export function passTurn(room, uid) {
   if (room.currentPlayerId !== uid) throw new Error('Сейчас не ваш ход');
-  return { ...room, currentPlayerId: nextPlayer(room, uid, room.direction), hasDrawn: false };
+  return { ...room, currentPlayerId: nextPlayer(room, uid, room.direction), hasDrawn: false, drawCount: 0 };
 }
 
 export function startNextRound(room) {

@@ -40,12 +40,24 @@ function computeHandCounts(hands) {
 // engine.js как принимал, так и отдаёт полный объект { ...комната, hands }, поэтому
 // его код не меняется — вся сборка/разборка происходит здесь.
 
-export async function createRoomForUser(uid, name, avatar, eliminationScore) {
+export async function createRoomForUser(uid, name, avatar, eliminationScore, mode) {
   const code = makeCode();
-  const room = createRoom({ code, hostUid: uid, hostName: name, hostAvatar: avatar, eliminationScore });
+  const room = createRoom({ code, hostUid: uid, hostName: name, hostAvatar: avatar, eliminationScore, mode });
   const { hands, ...meta } = room;
-  await setDoc(roomRef(code), { ...meta, handCounts: computeHandCounts(hands) });
+  await setDoc(roomRef(code), { ...meta, handCounts: computeHandCounts(hands), createdAt: serverTimestamp() });
   return code;
+}
+
+// Список открытых комнат — виден всем вошедшим в приложение (не только тем, у кого есть код/ссылка).
+export function subscribeOpenRooms(cb) {
+  const ref = collection(db, 'rooms');
+  const q = query(ref, orderBy('createdAt', 'desc'), limit(30));
+  return onSnapshot(q, (snap) => {
+    const rooms = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .filter((r) => r.status !== 'finished');
+    cb(rooms);
+  });
 }
 
 export async function joinRoom(code, uid, name, avatar) {

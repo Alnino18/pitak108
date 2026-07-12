@@ -93,7 +93,17 @@ export const translations = {
     joiningRoom: 'Заходим в комнату',
     scoreLimitLabel: 'Очков до вылета',
     sound: 'Звук',
-    reactionsHint: 'Реакции'
+    reactionsHint: 'Реакции',
+    drawsLeft: 'осталось попыток',
+    quickModeLabel: 'Быстрая игра (36 карт, один раунд)',
+    classicModeLabel: 'Классика (до лимита очков)',
+    openRoomsTitle: 'Открытые комнаты',
+    noOpenRooms: 'Сейчас открытых комнат нет',
+    statusPlaying: 'идёт игра',
+    statusLobby: 'ждут игроков',
+    watchBtn: 'Смотреть',
+    spectatorWaitingBanner: 'Вы подключились посреди игры — вступите в игру со следующего раунда',
+    waitingToJoinLabel: 'Ждут следующего раунда'
   },
   uz: {
     brand: 'Акопчила 108',
@@ -188,7 +198,17 @@ export const translations = {
     joiningRoom: 'Хонага киришмоқда',
     scoreLimitLabel: "Вилиш учун очко",
     sound: 'Товуш',
-    reactionsHint: 'Реакциялар'
+    reactionsHint: 'Реакциялар',
+    drawsLeft: 'қолган уринишлар',
+    quickModeLabel: 'Тезкор ўйин (36 карта, бир раунд)',
+    classicModeLabel: 'Классик (очко чегарасигача)',
+    openRoomsTitle: 'Очиқ хоналар',
+    noOpenRooms: "Ҳозирча очиқ хоналар йўқ",
+    statusPlaying: "ўйин кетмоқда",
+    statusLobby: "ўйинчилар кутилмоқда",
+    watchBtn: 'Томоша қилиш',
+    spectatorWaitingBanner: "Сиз ўйин давомида қўшилдингиз — кейинги раунддан ўзингиз ҳам ўйнайсиз",
+    waitingToJoinLabel: "Кейинги раундни кутмоқда"
   }
 };
 

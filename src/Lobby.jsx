@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useLang } from './LangContext';
 import LangSwitch from './LangSwitch';
@@ -13,7 +13,22 @@ export default function Lobby({ onEnterRoom, joinError }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [scoreLimit, setScoreLimit] = useState(108);
+  const [mode, setMode] = useState('classic');
   const [soundOn, setSoundOnState] = useState(isSoundOn());
+  const [openRooms, setOpenRooms] = useState(null); // null = ещё грузится
+
+  useEffect(() => {
+    let unsub = null;
+    let cancelled = false;
+    import('./roomApi').then(({ subscribeOpenRooms }) => {
+      if (cancelled) return;
+      unsub = subscribeOpenRooms(setOpenRooms);
+    });
+    return () => {
+      cancelled = true;
+      if (unsub) unsub();
+    };
+  }, []);
 
   function toggleSound() {
     const next = !soundOn;
@@ -26,8 +41,22 @@ export default function Lobby({ onEnterRoom, joinError }) {
     setError('');
     try {
       const { createRoomForUser } = await import('./roomApi');
-      const code = await createRoomForUser(user.uid, profile.displayName, profile.avatar, scoreLimit);
+      const code = await createRoomForUser(user.uid, profile.displayName, profile.avatar, scoreLimit, mode);
       onEnterRoom(code);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function doJoin(code) {
+    setBusy(true);
+    setError('');
+    try {
+      const { joinRoom } = await import('./roomApi');
+      const joinedCode = await joinRoom(code, user.uid, profile.displayName, profile.avatar);
+      onEnterRoom(joinedCode);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -38,17 +67,7 @@ export default function Lobby({ onEnterRoom, joinError }) {
   async function handleJoin(e) {
     e.preventDefault();
     if (!joinCode.trim()) return;
-    setBusy(true);
-    setError('');
-    try {
-      const { joinRoom } = await import('./roomApi');
-      const code = await joinRoom(joinCode.trim(), user.uid, profile.displayName, profile.avatar);
-      onEnterRoom(code);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
+    doJoin(joinCode.trim());
   }
 
   return (
@@ -73,21 +92,42 @@ export default function Lobby({ onEnterRoom, joinError }) {
         <h2>{t('ownRoomTitle')}</h2>
         <p className="muted">{t('ownRoomDesc')}</p>
 
-        <div className="score-presets">
-          <span className="muted">{t('scoreLimitLabel')}:</span>
+        <div className="mode-presets">
           <div className="preset-row">
-            {SCORE_PRESETS.map((v) => (
-              <button
-                key={v}
-                type="button"
-                className={`preset-chip ${scoreLimit === v ? 'chosen' : ''}`}
-                onClick={() => setScoreLimit(v)}
-              >
-                {v}
-              </button>
-            ))}
+            <button
+              type="button"
+              className={`preset-chip wide ${mode === 'classic' ? 'chosen' : ''}`}
+              onClick={() => setMode('classic')}
+            >
+              {t('classicModeLabel')}
+            </button>
+            <button
+              type="button"
+              className={`preset-chip wide ${mode === 'quick' ? 'chosen' : ''}`}
+              onClick={() => setMode('quick')}
+            >
+              {t('quickModeLabel')}
+            </button>
           </div>
         </div>
+
+        {mode === 'classic' && (
+          <div className="score-presets">
+            <span className="muted">{t('scoreLimitLabel')}:</span>
+            <div className="preset-row">
+              {SCORE_PRESETS.map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  className={`preset-chip ${scoreLimit === v ? 'chosen' : ''}`}
+                  onClick={() => setScoreLimit(v)}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <button className="primary" onClick={handleCreate} disabled={busy} type="button">
           {t('createRoom')}
@@ -105,6 +145,34 @@ export default function Lobby({ onEnterRoom, joinError }) {
           />
           <button className="primary" type="submit" disabled={busy}>{t('joinBtn')}</button>
         </form>
+      </div>
+
+      <div className="lobby-card">
+        <h2>{t('openRoomsTitle')}</h2>
+        {openRooms === null && <p className="muted">{t('loading')}</p>}
+        {openRooms && openRooms.length === 0 && <p className="muted">{t('noOpenRooms')}</p>}
+        {openRooms && openRooms.length > 0 && (
+          <ul className="open-rooms-list">
+            {openRooms.map((r) => {
+              const playerCount = (r.order?.length || 0) + (r.pendingJoiners?.length || 0);
+              const isPlaying = r.status === 'playing';
+              return (
+                <li key={r.id} className="open-room-item">
+                  <div className="open-room-info">
+                    <span className="open-room-code">{r.id}</span>
+                    <span className={`open-room-status ${isPlaying ? 'live' : ''}`}>
+                      {isPlaying ? t('statusPlaying') : t('statusLobby')}
+                    </span>
+                    <span className="muted open-room-count">👥 {playerCount}</span>
+                  </div>
+                  <button className="secondary" onClick={() => doJoin(r.id)} disabled={busy} type="button">
+                    {isPlaying ? t('watchBtn') : t('joinBtn')}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
 
       {joinError && (

@@ -142,6 +142,8 @@ export default function Room({ code, onLeave }) {
   const isHost = room.hostId === uid;
   const isMyTurn = room.currentPlayerId === uid;
   const top = room.discardPile?.[room.discardPile.length - 1];
+  const amPendingJoiner = (room.pendingJoiners || []).some((p) => p.uid === uid);
+  const isSpectator = amPendingJoiner || !!room.players[uid]?.eliminated;
 
   async function safe(fn) {
     try {
@@ -230,7 +232,7 @@ export default function Room({ code, onLeave }) {
           <button className="link" onClick={onLeave} type="button">← {t('back')}</button>
         </div>
         <h2>🏆 {t('winner')}: {room.players[room.winnerId]?.name}</h2>
-        <Scoreboard room={room} t={t} />
+        {room.settings?.mode !== 'quick' && <Scoreboard room={room} t={t} />}
         {isHost && (
           <button className="primary" onClick={() => safe(() => startNextRoundInRoom(code))} type="button">
             {t('playAgain')}
@@ -245,8 +247,11 @@ export default function Room({ code, onLeave }) {
   const legal = room.pendingDraw > 0
     ? myHand.filter((c) => matchesPendingKind(c, room.pendingDrawKind))
     : myHand.filter((c) => canPlay(c, top, room.activeSuit));
-  const canDraw = isMyTurn && (room.pendingDraw > 0 || !room.hasDrawn);
-  const canPass = isMyTurn && room.pendingDraw === 0 && room.hasDrawn;
+  const maxDraws = top && top.rank === '8' ? 3 : 1;
+  const drawCount = room.drawCount || 0;
+  const canDraw = isMyTurn && (room.pendingDraw > 0 || drawCount < maxDraws);
+  const canPass = isMyTurn && room.pendingDraw === 0 && drawCount >= maxDraws;
+  const drawsLeft = Math.max(0, maxDraws - drawCount);
 
   // Остальные игроки, начиная со следующего после меня — раскладываем по дуге сверху стола
   const others = room.order.filter((pid) => pid !== uid);
@@ -279,6 +284,14 @@ export default function Room({ code, onLeave }) {
 
       {room.players[uid]?.eliminated && (
         <div className="spectator-banner">{t('spectatorBanner')}</div>
+      )}
+      {amPendingJoiner && (
+        <div className="spectator-banner">{t('spectatorWaitingBanner')}</div>
+      )}
+      {room.pendingJoiners?.length > 0 && !amPendingJoiner && (
+        <div className="waiting-joiners-banner">
+          {t('waitingToJoinLabel')}: {room.pendingJoiners.map((p) => p.name).join(', ')}
+        </div>
       )}
 
       <VoiceChat code={code} uid={uid} players={room.players} />
@@ -372,8 +385,12 @@ export default function Room({ code, onLeave }) {
             </button>
           )}
         </div>
-        {isMyTurn && room.hasDrawn && room.pendingDraw === 0 && (
-          <div className="muted hand-hint">{t('alreadyDrewHint')}</div>
+        {isMyTurn && drawCount > 0 && room.pendingDraw === 0 && (
+          <div className="muted hand-hint">
+            {drawsLeft > 0
+              ? `${t('alreadyDrewHint')} (${t('drawsLeft') || 'осталось попыток'}: ${drawsLeft})`
+              : t('alreadyDrewHint')}
+          </div>
         )}
       </div>
 
