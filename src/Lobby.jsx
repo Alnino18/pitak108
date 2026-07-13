@@ -3,8 +3,12 @@ import { useAuth } from './AuthContext';
 import { useLang } from './LangContext';
 import LangSwitch from './LangSwitch';
 import { isSoundOn, setSoundOn } from './sounds';
+import { THEMES, CARD_BACKS, getTheme, setTheme, getCardBack, setCardBack } from './prefs';
+import Leaderboard from './Leaderboard';
 
 const SCORE_PRESETS = [108, 150, 200];
+const THEME_ICONS = { green: '🟢', red: '🔴', blue: '🔵', dark: '⚫' };
+const BACK_LABELS = { classic: 'Classic', diamond: 'Diamond', stripes: 'Stripes' };
 
 export default function Lobby({ onEnterRoom, joinError }) {
   const { user, profile, logout } = useAuth();
@@ -15,6 +19,8 @@ export default function Lobby({ onEnterRoom, joinError }) {
   const [scoreLimit, setScoreLimit] = useState(108);
   const [mode, setMode] = useState('classic');
   const [soundOn, setSoundOnState] = useState(isSoundOn());
+  const [theme, setThemeState] = useState(getTheme());
+  const [cardBack, setCardBackState] = useState(getCardBack());
   const [openRooms, setOpenRooms] = useState(null); // null = ещё грузится
 
   useEffect(() => {
@@ -34,6 +40,16 @@ export default function Lobby({ onEnterRoom, joinError }) {
     const next = !soundOn;
     setSoundOn(next);
     setSoundOnState(next);
+  }
+
+  function chooseTheme(th) {
+    setTheme(th);
+    setThemeState(th);
+  }
+
+  function chooseCardBack(cb) {
+    setCardBack(cb);
+    setCardBackState(cb);
   }
 
   async function handleCreate() {
@@ -174,6 +190,38 @@ export default function Lobby({ onEnterRoom, joinError }) {
           </ul>
         )}
       </div>
+
+      <div className="lobby-card">
+        <h2>🎨 {t('appearanceTitle')}</h2>
+        <p className="muted">{t('themeLabel')}:</p>
+        <div className="preset-row">
+          {THEMES.map((th) => (
+            <button
+              key={th}
+              type="button"
+              className={`preset-chip ${theme === th ? 'chosen' : ''}`}
+              onClick={() => chooseTheme(th)}
+            >
+              {THEME_ICONS[th]}
+            </button>
+          ))}
+        </div>
+        <p className="muted" style={{ marginTop: '0.6rem' }}>{t('cardBackLabel')}:</p>
+        <div className="preset-row">
+          {CARD_BACKS.map((cb) => (
+            <button
+              key={cb}
+              type="button"
+              className={`preset-chip ${cardBack === cb ? 'chosen' : ''}`}
+              onClick={() => chooseCardBack(cb)}
+            >
+              {BACK_LABELS[cb]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <Leaderboard />
 
       {joinError && (
         <div className="error">{t('linkJoinFailed')}: {joinError}</div>

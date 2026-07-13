@@ -10,7 +10,8 @@ import {
   passTurnInRoom,
   startNextRoundInRoom,
   subscribeReactions,
-  sendReaction
+  sendReaction,
+  checkAfkSkip
 } from './roomApi';
 import { canPlay, matchesPendingKind } from './rules';
 import Card from './Card';
@@ -89,6 +90,14 @@ export default function Room({ code, onLeave }) {
   }, [code]);
 
   useEffect(() => {
+    if (!room || room.status !== 'playing') return;
+    const interval = setInterval(() => {
+      checkAfkSkip(code).catch(() => {});
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [code, room?.status]);
+
+  useEffect(() => {
     const unsub = subscribeMyHand(code, user.uid, setMyHand);
     return unsub;
   }, [code, user.uid]);
@@ -133,7 +142,12 @@ export default function Room({ code, onLeave }) {
   useEffect(() => {
     if (room?.status === 'finished' && !wasFinished.current) {
       wasFinished.current = true;
-      if (room.winnerId === user.uid) winSound();
+      if (room.winnerId === user.uid) {
+        winSound();
+        import('./statsApi').then(({ recordWin }) => recordWin(user.uid).catch(() => {}));
+      } else if (room.players?.[user.uid]) {
+        import('./statsApi').then(({ recordGamePlayed }) => recordGamePlayed(user.uid).catch(() => {}));
+      }
     }
     if (room?.status !== 'finished') wasFinished.current = false;
   }, [room?.status, room?.winnerId, user.uid]);

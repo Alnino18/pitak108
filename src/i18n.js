@@ -103,7 +103,13 @@ export const translations = {
     statusLobby: 'ждут игроков',
     watchBtn: 'Смотреть',
     spectatorWaitingBanner: 'Вы подключились посреди игры — вступите в игру со следующего раунда',
-    waitingToJoinLabel: 'Ждут следующего раунда'
+    waitingToJoinLabel: 'Ждут следующего раунда',
+    leaderboardTitle: 'Лидерборд',
+    noWinsYet: 'Пока никто не выиграл ни одной игры',
+    appearanceTitle: 'Внешний вид',
+    themeLabel: 'Тема стола',
+    cardBackLabel: 'Рубашка карт',
+    offlineBanner: 'Нет соединения — переподключаемся…'
   },
   uz: {
     brand: 'Акопчила 108',
@@ -208,7 +214,13 @@ export const translations = {
     statusLobby: "ўйинчилар кутилмоқда",
     watchBtn: 'Томоша қилиш',
     spectatorWaitingBanner: "Сиз ўйин давомида қўшилдингиз — кейинги раунддан ўзингиз ҳам ўйнайсиз",
-    waitingToJoinLabel: "Кейинги раундни кутмоқда"
+    waitingToJoinLabel: "Кейинги раундни кутмоқда",
+    leaderboardTitle: 'Лидерборд',
+    noWinsYet: "Ҳозирча ҳеч ким ғалаба қозонмаган",
+    appearanceTitle: "Ташқи кўриниш",
+    themeLabel: 'Стол мавзуси',
+    cardBackLabel: 'Карта орқаси',
+    offlineBanner: "Алоқа йўқ — қайта уланмоқда…"
   }
 };
 

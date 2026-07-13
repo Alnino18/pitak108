@@ -5,6 +5,7 @@ import Login from './Login';
 import CompleteProfile from './CompleteProfile';
 import Lobby from './Lobby';
 import InstallPrompt from './InstallPrompt';
+import ConnectionStatus from './ConnectionStatus';
 
 // Room и всё, что ему нужно (движок игры, Firestore-обвязка, чат, голосовой чат),
 // грузятся отдельным куском только когда человек реально заходит в комнату —
@@ -59,6 +60,7 @@ export default function App() {
 
   return (
     <>
+      <ConnectionStatus />
       <InstallPrompt />
       {!user ? (
         <Login />

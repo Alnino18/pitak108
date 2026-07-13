@@ -11,7 +11,9 @@ import {
   setDoc
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { createRoom, addPlayer, startGame, playCard, drawCard, passTurn, startNextRound } from './engine';
+import { createRoom, addPlayer, startGame, playCard, drawCard, passTurn, startNextRound, autoSkipTurn } from './engine';
+
+const AFK_TIMEOUT_MS = 60000; // если игрок не ходит дольше минуты — ход пропускают автоматически
 
 function makeCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -103,6 +105,10 @@ async function transact(code, fn) {
     const updated = fn(fullRoom);
     const { hands: updatedHands, ...updatedMeta } = updated;
 
+    if (updatedMeta.currentPlayerId !== meta.currentPlayerId) {
+      updatedMeta.turnStartedAt = Date.now();
+    }
+
     tx.set(rRef, { ...updatedMeta, handCounts: computeHandCounts(updatedHands) });
     for (const uid of Object.keys(updatedHands || {})) {
       tx.set(handRef(code, uid), { cards: updatedHands[uid] });
@@ -123,6 +129,23 @@ export const playCardInRoom = (code, uid, cardId, chosenSuit) =>
 export const drawCardInRoom = (code, uid) => transact(code, (room) => drawCard(room, uid));
 export const passTurnInRoom = (code, uid) => transact(code, (room) => passTurn(room, uid));
 export const startNextRoundInRoom = (code) => transact(code, (room) => startNextRound(room));
+
+// Проверка на бездействие — любой клиент в комнате может её вызвать (например, раз в 5-10 сек).
+// Если ход не менялся дольше AFK_TIMEOUT_MS, текущего игрока пропускают автоматически.
+// Безопасно вызывать многократно — если время ещё не вышло, транзакция ничего не делает.
+export async function checkAfkSkip(code) {
+  const rRef = roomRef(code);
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(rRef);
+    if (!snap.exists()) return;
+    const meta = snap.data();
+    if (meta.status !== 'playing') return;
+    const started = meta.turnStartedAt || 0;
+    if (Date.now() - started < AFK_TIMEOUT_MS) return;
+    const updated = autoSkipTurn(meta);
+    tx.set(rRef, { ...updated, turnStartedAt: Date.now() });
+  });
+}
 
 export function subscribeMessages(code, cb) {
   const ref = collection(db, 'rooms', code.toUpperCase(), 'messages');

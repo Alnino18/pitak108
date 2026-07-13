@@ -1,5 +1,7 @@
 // Простые оригинальные иллюстрации для королевских карт (валет/дама/король) —
 // геометрический минималистичный стиль, никаких заимствованных изображений.
+import { getCardBack } from './prefs';
+
 function FaceIllustration({ rank, color }) {
   const stroke = color;
   const fillLight = color === '#c0272d' ? '#f3d3d3' : '#d9d9d9';
@@ -64,7 +66,7 @@ function FaceIllustration({ rank, color }) {
 export default function Card({ card, onClick, disabled, small, faceDown }) {
   if (faceDown) {
     return (
-      <div className={`card card-back ${small ? 'card-sm' : ''}`}>
+      <div className={`card card-back cb-${getCardBack()} ${small ? 'card-sm' : ''}`}>
         <div className="card-back-emblem">108</div>
       </div>
     );

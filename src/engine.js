@@ -421,6 +421,18 @@ export function passTurn(room, uid) {
   return { ...room, currentPlayerId: nextPlayer(room, uid, room.direction), hasDrawn: false, drawCount: 0 };
 }
 
+// Системный пропуск хода — вызывается автоматически, если игрок долго бездействует.
+// В отличие от passTurn, не требует совпадения uid (это не действие самого игрока).
+export function autoSkipTurn(room) {
+  if (room.status !== 'playing' || !room.currentPlayerId) return room;
+  return {
+    ...room,
+    currentPlayerId: nextPlayer(room, room.currentPlayerId, room.direction),
+    hasDrawn: false,
+    drawCount: 0
+  };
+}
+
 export function startNextRound(room) {
   return startGame({ ...room, status: 'lobby' });
 }

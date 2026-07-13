@@ -12,6 +12,29 @@
   font-family: 'Manrope', system-ui, sans-serif;
 }
 
+[data-theme="red"] {
+  --felt-dark: #3d0b12;
+  --felt: #6b1420;
+  --felt-light: #8a1c2b;
+  --gold: #d4af37;
+  --ink: #1f0508;
+}
+[data-theme="blue"] {
+  --felt-dark: #0a2540;
+  --felt: #123a63;
+  --felt-light: #1a4d80;
+  --gold: #d9c46a;
+  --ink: #06121f;
+}
+[data-theme="dark"] {
+  --felt-dark: #121212;
+  --felt: #1c1c1c;
+  --felt-light: #262626;
+  --gold: #c9a63e;
+  --ink: #050505;
+  --cream: #e8e6e2;
+}
+
 * { box-sizing: border-box; }
 
 html, body, #root {
@@ -201,6 +224,33 @@ button { font-family: inherit; cursor: pointer; }
 }
 .invite-actions { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; }
 .invite-status { margin-top: 0.5rem; }
+
+.leaderboard-list { list-style: none; padding: 0; margin: 0.5rem 0 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.leaderboard-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(244,239,227,0.05);
+  border-radius: 10px;
+  padding: 0.4rem 0.7rem;
+}
+.lb-rank { font-weight: 800; color: var(--gold); width: 28px; }
+.lb-name { flex: 1; font-weight: 600; }
+.lb-wins { font-size: 0.85rem; color: var(--gold); }
+
+.connection-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--danger);
+  color: #fff;
+  text-align: center;
+  padding: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
 
 .open-rooms-list { list-style: none; padding: 0; margin: 0.5rem 0 0; display: flex; flex-direction: column; gap: 0.5rem; }
 .open-room-item {
@@ -657,6 +707,14 @@ button { font-family: inherit; cursor: pointer; }
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.card-back.cb-diamond {
+  background:
+    repeating-linear-gradient(45deg, var(--felt) 0, var(--felt) 8px, var(--felt-dark) 8px, var(--felt-dark) 16px),
+    repeating-linear-gradient(-45deg, var(--felt) 0, var(--felt) 8px, transparent 8px, transparent 16px);
+}
+.card-back.cb-stripes {
+  background: repeating-linear-gradient(90deg, var(--felt) 0, var(--felt) 6px, var(--felt-dark) 6px, var(--felt-dark) 12px);
 }
 .card-back-emblem {
   font-family: 'Fraunces', serif;
