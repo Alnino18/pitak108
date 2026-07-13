@@ -276,13 +276,13 @@ export default function Room({ code, onLeave }) {
   const n = myHand.length;
   const spread = Math.min(22, n * 3); // общий угол веера — заметно мягче, карты почти не заваливаются
 
-  // Ширина/нахлёст карт подбираются так, чтобы веер всегда помещался в экран,
-  // даже если на руке скопилось много карт (после штрафных доборов). Запас пошире,
-  // чтобы даже с учётом поворота карт на краях они не вылезали за границы экрана.
+  // Размер карты всегда одинаковый — не уменьшается. Подстраивается только нахлёст:
+  // чем больше карт, тем плотнее они лежат друг на друге (виден только уголок),
+  // чем меньше карт — тем шире веер, как на реальном столе.
   const availableWidth = Math.min(viewportWidth, 480) - 44;
-  const small = n > 5;
-  const cardW = small ? 58 : 74;
-  const step = n > 1 ? Math.min(cardW - 12, Math.max(14, (availableWidth - cardW) / (n - 1))) : 0;
+  const small = false;
+  const cardW = 74;
+  const step = n > 1 ? Math.min(cardW - 4, Math.max(15, (availableWidth - cardW) / (n - 1))) : 0;
   const overlap = cardW - step;
 
   const penaltyKindLabel = { '6': t('kindSix'), '7': t('kindSeven'), 'K♠': t('kindKing') };

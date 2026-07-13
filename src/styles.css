@@ -632,6 +632,23 @@ button { font-family: inherit; cursor: pointer; }
 }
 .card-sm .card-center-suit { font-size: 1.6rem; }
 
+.card-face-illustration {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card-face-suit {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+.card-sm .card-face-suit { font-size: 0.7rem; bottom: 4px; right: 5px; }
+
 .card-back {
   background:
     repeating-linear-gradient(45deg, var(--felt) 0, var(--felt) 5px, var(--felt-dark) 5px, var(--felt-dark) 10px);
