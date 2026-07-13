@@ -274,14 +274,15 @@ export default function Room({ code, onLeave }) {
   const orderedOthers = [...room.order.slice(myIndex + 1), ...room.order.slice(0, myIndex)].filter((pid) => others.includes(pid));
 
   const n = myHand.length;
-  const spread = Math.min(46, n * 7); // общий угол веера, шире руки — шире угол, но не более 46°
+  const spread = Math.min(22, n * 3); // общий угол веера — заметно мягче, карты почти не заваливаются
 
   // Ширина/нахлёст карт подбираются так, чтобы веер всегда помещался в экран,
-  // даже если на руке скопилось много карт (после штрафных доборов).
-  const availableWidth = Math.min(viewportWidth, 480) - 24;
-  const small = n > 8;
+  // даже если на руке скопилось много карт (после штрафных доборов). Запас пошире,
+  // чтобы даже с учётом поворота карт на краях они не вылезали за границы экрана.
+  const availableWidth = Math.min(viewportWidth, 480) - 44;
+  const small = n > 5;
   const cardW = small ? 58 : 74;
-  const step = n > 1 ? Math.min(cardW - 10, Math.max(16, (availableWidth - cardW) / (n - 1))) : 0;
+  const step = n > 1 ? Math.min(cardW - 12, Math.max(14, (availableWidth - cardW) / (n - 1))) : 0;
   const overlap = cardW - step;
 
   const penaltyKindLabel = { '6': t('kindSix'), '7': t('kindSeven'), 'K♠': t('kindKing') };
@@ -372,7 +373,7 @@ export default function Room({ code, onLeave }) {
             const mid = (n - 1) / 2;
             const offset = i - mid;
             const rot = n > 1 ? (offset / mid) * (spread / 2) : 0;
-            const lift = Math.abs(offset) * 2;
+            const lift = Math.abs(offset) * 1.3;
             return (
               <div
                 key={card.id}
