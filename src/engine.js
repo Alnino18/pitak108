@@ -96,6 +96,30 @@ function afterInOrder(list, uid) {
   return list[(idx + 1) % list.length];
 }
 
+// Автоматически выложенная ведущим открывающая карта раунда действует так же,
+// как если бы её сыграл обычный игрок: 6/7/король пик — штраф, туз — пропуск хода,
+// дама — сама выбирает масть (раз выбирать некому, продолжаем в её собственной масти).
+function openingEffect(discardTop, activeList, leader) {
+  let currentPlayerId = afterInOrder(activeList, leader);
+  let pendingDraw = 0;
+  let pendingDrawKind = null;
+  let activeSuit = null;
+
+  const kind = penaltyKind(discardTop);
+  if (kind) {
+    pendingDraw = drawPenaltyFor(discardTop);
+    pendingDrawKind = kind;
+  }
+  if (isSkip(discardTop)) {
+    currentPlayerId = afterInOrder(activeList, currentPlayerId);
+  }
+  if (discardTop.rank === 'Q') {
+    activeSuit = discardTop.suit;
+  }
+
+  return { currentPlayerId, pendingDraw, pendingDrawKind, activeSuit };
+}
+
 export function startGame(room) {
   const active = room.order.filter((uid) => !room.players[uid]?.eliminated);
   if (active.length < 2) throw new Error('Нужно минимум 2 игрока');
@@ -103,6 +127,7 @@ export function startGame(room) {
   const mode = room.settings?.mode || 'classic';
   const leaderUid = active[0];
   const { deck, hands, discardTop, leader } = dealHands(active, HAND_SIZE, mode, leaderUid);
+  const opening = openingEffect(discardTop, active, leader);
 
   return {
     ...room,
@@ -110,11 +135,11 @@ export function startGame(room) {
     deck,
     hands,
     discardPile: [discardTop],
-    currentPlayerId: afterInOrder(active, leader),
+    currentPlayerId: opening.currentPlayerId,
     direction: 1,
-    activeSuit: null,
-    pendingDraw: 0,
-    pendingDrawKind: null,
+    activeSuit: opening.activeSuit,
+    pendingDraw: opening.pendingDraw,
+    pendingDrawKind: opening.pendingDrawKind,
     hasDrawn: false,
     drawCount: 0,
     winnerId: null,
@@ -301,6 +326,7 @@ export function playCard(room, uid, cardId, chosenSuit) {
     // Игра продолжается — сразу раздаём карты для следующего раунда,
     // ведёт (и автоматически открывает раунд одной картой) победитель предыдущего раунда.
     const { deck: newDeck, hands: newHands, discardTop: newDiscardTop, leader } = dealHands(stillActive, HAND_SIZE, room.settings?.mode, uid);
+    const opening = openingEffect(newDiscardTop, stillActive, leader);
 
     return {
       ...room,
@@ -312,11 +338,11 @@ export function playCard(room, uid, cardId, chosenSuit) {
       status: 'playing',
       winnerId: null,
       roundWinnerId: uid,
-      currentPlayerId: afterInOrder(stillActive, leader),
+      currentPlayerId: opening.currentPlayerId,
       direction: 1,
-      activeSuit: null,
-      pendingDraw: 0,
-      pendingDrawKind: null,
+      activeSuit: opening.activeSuit,
+      pendingDraw: opening.pendingDraw,
+      pendingDrawKind: opening.pendingDrawKind,
       hasDrawn: false,
       drawCount: 0,
       pendingJoiners: []
