@@ -42,9 +42,9 @@ function computeHandCounts(hands) {
 // engine.js как принимал, так и отдаёт полный объект { ...комната, hands }, поэтому
 // его код не меняется — вся сборка/разборка происходит здесь.
 
-export async function createRoomForUser(uid, name, avatar, eliminationScore, mode) {
+export async function createRoomForUser(uid, name, avatar, eliminationScore, mode, photoURL) {
   const code = makeCode();
-  const room = createRoom({ code, hostUid: uid, hostName: name, hostAvatar: avatar, eliminationScore, mode });
+  const room = createRoom({ code, hostUid: uid, hostName: name, hostAvatar: avatar, hostPhotoURL: photoURL, eliminationScore, mode });
   const { hands, ...meta } = room;
   await setDoc(roomRef(code), { ...meta, handCounts: computeHandCounts(hands), createdAt: serverTimestamp() });
   return code;
@@ -62,13 +62,13 @@ export function subscribeOpenRooms(cb) {
   });
 }
 
-export async function joinRoom(code, uid, name, avatar) {
+export async function joinRoom(code, uid, name, avatar, photoURL) {
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(roomRef(code));
     if (!snap.exists()) throw new Error('Комната не найдена');
     const meta = snap.data();
     // В лобби карт ещё нет — раздачи не было, hands можно не читать.
-    const updated = addPlayer({ ...meta, hands: {} }, uid, name, avatar);
+    const updated = addPlayer({ ...meta, hands: {} }, uid, name, avatar, photoURL);
     const { hands, ...updatedMeta } = updated;
     tx.set(roomRef(code), { ...updatedMeta, handCounts: computeHandCounts(hands) });
   });

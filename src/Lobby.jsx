@@ -95,7 +95,7 @@ export default function Lobby({ onEnterRoom, joinError }) {
     setError('');
     try {
       const { createRoomForUser } = await import('./roomApi');
-      const code = await createRoomForUser(user.uid, profile.displayName, profile.avatar, scoreLimit, mode);
+      const code = await createRoomForUser(user.uid, profile.displayName, profile.avatar, scoreLimit, mode, profile.photoURL);
       onEnterRoom(code);
     } catch (err) {
       setError(err.message);
@@ -109,7 +109,7 @@ export default function Lobby({ onEnterRoom, joinError }) {
     setError('');
     try {
       const { joinRoom } = await import('./roomApi');
-      const joinedCode = await joinRoom(code, user.uid, profile.displayName, profile.avatar);
+      const joinedCode = await joinRoom(code, user.uid, profile.displayName, profile.avatar, profile.photoURL);
       onEnterRoom(joinedCode);
     } catch (err) {
       setError(err.message);

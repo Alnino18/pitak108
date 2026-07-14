@@ -10,14 +10,14 @@ function scoreLimits(room) {
   return { eliminationScore, resetScore: eliminationScore - 1 };
 }
 
-export function createRoom({ code, hostUid, hostName, hostAvatar, eliminationScore, mode }) {
+export function createRoom({ code, hostUid, hostName, hostAvatar, hostPhotoURL, eliminationScore, mode }) {
   return {
     code,
     hostId: hostUid,
     status: 'lobby',
     order: [hostUid],
     players: {
-      [hostUid]: { name: hostName, avatar: hostAvatar || '🂡', score: 0, eliminated: false }
+      [hostUid]: { name: hostName, avatar: hostAvatar || '🂡', photoURL: hostPhotoURL || null, score: 0, eliminated: false }
     },
     settings: {
       eliminationScore: eliminationScore || DEFAULT_ELIMINATION_SCORE,
@@ -40,7 +40,7 @@ export function createRoom({ code, hostUid, hostName, hostAvatar, eliminationSco
   };
 }
 
-export function addPlayer(room, uid, name, avatar) {
+export function addPlayer(room, uid, name, avatar, photoURL) {
   if (room.order.includes(uid) || (room.pendingJoiners || []).some((p) => p.uid === uid)) return room;
   const total = room.order.length + (room.pendingJoiners || []).length;
   if (total >= MAX_PLAYERS) throw new Error(`В комнате максимум ${MAX_PLAYERS} игроков`);
@@ -52,7 +52,7 @@ export function addPlayer(room, uid, name, avatar) {
       order: [...room.order, uid],
       players: {
         ...room.players,
-        [uid]: { name, avatar: avatar || '🂡', score: 0, eliminated: false }
+        [uid]: { name, avatar: avatar || '🂡', photoURL: photoURL || null, score: 0, eliminated: false }
       }
     };
   }
@@ -60,7 +60,7 @@ export function addPlayer(room, uid, name, avatar) {
   // Игра уже идёт — становимся зрителем и вступаем в игру со следующего раунда.
   return {
     ...room,
-    pendingJoiners: [...(room.pendingJoiners || []), { uid, name, avatar: avatar || '🂡' }]
+    pendingJoiners: [...(room.pendingJoiners || []), { uid, name, avatar: avatar || '🂡', photoURL: photoURL || null }]
   };
 }
 
@@ -296,7 +296,7 @@ export function playCard(room, uid, cardId, chosenSuit) {
       const startScore = isQuick ? 0 : Math.min(eliminationScore - 1, maxScore + 1);
       for (const pj of pendingJoiners) {
         order = [...order, pj.uid];
-        players = { ...players, [pj.uid]: { name: pj.name, avatar: pj.avatar, score: startScore, eliminated: false } };
+        players = { ...players, [pj.uid]: { name: pj.name, avatar: pj.avatar, photoURL: pj.photoURL || null, score: startScore, eliminated: false } };
       }
     }
 

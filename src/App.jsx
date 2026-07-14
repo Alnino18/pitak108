@@ -39,7 +39,7 @@ export default function App() {
         // Динамический импорт — движок игры и Firestore-обвязка не грузятся,
         // пока реально не понадобятся (сразу после входа/лобби).
         const { joinRoom } = await import('./roomApi');
-        const code = await joinRoom(autoJoinCode, user.uid, profile.displayName, profile.avatar);
+        const code = await joinRoom(autoJoinCode, user.uid, profile.displayName, profile.avatar, profile.photoURL);
         if (!cancelled) setRoomCode(code);
       } catch (err) {
         if (!cancelled) setAutoJoinError(err.message);

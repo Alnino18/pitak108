@@ -18,6 +18,7 @@ import Card from './Card';
 import Chat from './Chat';
 import VoiceChat from './VoiceChat';
 import { playCardSound, drawCardSound, turnSound, winSound, dealSound } from './sounds';
+import Avatar from './Avatar';
 
 const SUITS = ['♠', '♥', '♦', '♣'];
 const REACTION_EMOJIS = ['⚡', '😂', '👍', '😮', '🔥', '😢'];
@@ -252,7 +253,7 @@ export default function Room({ code, onLeave }) {
         <ul className="player-list">
           {room.order.map((pid) => (
             <li key={pid}>
-              <span className="pl-avatar">{room.players[pid].avatar}</span>
+              <Avatar photoURL={room.players[pid].photoURL} emoji={room.players[pid].avatar} size={28} className="pl-avatar" />
               <span>{room.players[pid].name}</span>
               {pid === room.hostId && <span className="tag">{t('host')}</span>}
             </li>
@@ -357,7 +358,7 @@ export default function Room({ code, onLeave }) {
           const active = pid === room.currentPlayerId;
           return (
             <div key={pid} className={`seat ${active ? 'active' : ''} ${p.eliminated ? 'eliminated' : ''}`}>
-              <div className="seat-avatar">{p.avatar}</div>
+              <div className="seat-avatar"><Avatar photoURL={p.photoURL} emoji={p.avatar} size={30} /></div>
               <div className="seat-name">{p.name}</div>
               <div className="seat-meta">
                 <span className="seat-score">{p.score}</span>
@@ -493,7 +494,7 @@ function Scoreboard({ room, compact, currentPlayerId, t }) {
         const cardCount = room.handCounts?.[pid];
         return (
           <li key={pid} className={`${pid === currentPlayerId ? 'active' : ''} ${p.eliminated ? 'eliminated' : ''}`}>
-            <span className="pl-avatar">{p.avatar}</span>
+            <Avatar photoURL={p.photoURL} emoji={p.avatar} size={26} className="pl-avatar" />
             <span className="pl-name">{p.name}</span>
             <span className="pl-score">{p.score} {t('scoreSuffix')}</span>
             {typeof cardCount === 'number' && <span className="pl-cards">🂠×{cardCount}</span>}
