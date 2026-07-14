@@ -90,13 +90,18 @@ export default function Room({ code, onLeave }) {
     return unsub;
   }, [code]);
 
-  useEffect(() => {
-    if (!room || room.status !== 'playing') return;
-    const interval = setInterval(() => {
-      checkAfkSkip(code).catch(() => {});
-    }, 8000);
-    return () => clearInterval(interval);
-  }, [code, room?.status]);
+  // ВРЕМЕННО ОТКЛЮЧЕНО: автопропуск хода бездействующего игрока (AFK) полагался
+  // на часы устройства каждого клиента (Date.now()), а не на серверное время.
+  // Если у кого-то из игроков часы сбиты (частая ситуация на телефонах), это
+  // приводило к тому, что чужие ходы пропускались почти мгновенно, ошибочно.
+  // Надёжно это можно сделать только через Cloud Functions (серверное время).
+  // useEffect(() => {
+  //   if (!room || room.status !== 'playing') return;
+  //   const interval = setInterval(() => {
+  //     checkAfkSkip(code).catch(() => {});
+  //   }, 8000);
+  //   return () => clearInterval(interval);
+  // }, [code, room?.status]);
 
   useEffect(() => {
     const unsub = subscribeMyHand(code, user.uid, setMyHand);
