@@ -325,7 +325,7 @@ export default function Room({ code, onLeave }) {
   // чем меньше карт — тем шире веер, как на реальном столе.
   const availableWidth = Math.min(viewportWidth, 480) - 44;
   const small = false;
-  const cardW = 74;
+  const cardW = 148;
   const step = n > 1 ? Math.min(cardW - 4, Math.max(15, (availableWidth - cardW) / (n - 1))) : 0;
   const overlap = cardW - step;
 
@@ -365,9 +365,13 @@ export default function Room({ code, onLeave }) {
             <div key={pid} className={`seat ${active ? 'active' : ''} ${p.eliminated ? 'eliminated' : ''}`}>
               <div className="seat-avatar"><Avatar photoURL={p.photoURL} emoji={p.avatar} size={30} /></div>
               <div className="seat-name">{p.name}</div>
+              {!p.eliminated && (
+                <div className="seat-cardstack">
+                  <Card faceDown small badge={cardCount} />
+                </div>
+              )}
               <div className="seat-meta">
-                <span className="seat-score">{p.score}</span>
-                <span className="seat-cards">🂠{cardCount}</span>
+                <span className="seat-score">🏅{p.score}</span>
               </div>
             </div>
           );
@@ -433,6 +437,7 @@ export default function Room({ code, onLeave }) {
                 <Card
                   card={card}
                   small={small}
+                  large
                   onClick={() => handleCardClick(card)}
                   disabled={!isMyTurn || !legal.some((c) => c.id === card.id)}
                 />

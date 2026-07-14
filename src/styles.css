@@ -169,6 +169,37 @@ button { font-family: inherit; cursor: pointer; }
 .muted { opacity: 0.7; font-size: 0.9rem; }
 
 /* Lobby */
+.lobby-tab-content { padding-bottom: 5.5rem; }
+
+.bottom-tabs {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  background: var(--ink);
+  border-top: 1px solid rgba(212,175,55,0.25);
+  z-index: 15;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.bottom-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.6rem 0.2rem;
+  background: none;
+  border: none;
+  color: var(--cream);
+  opacity: 0.55;
+}
+.bottom-tab.active { opacity: 1; }
+.bottom-tab.active .bottom-tab-icon { transform: scale(1.15); }
+.bottom-tab-icon { font-size: 1.3rem; color: var(--cream); transition: transform 0.15s ease; }
+.bottom-tab-icon.red { color: var(--red); }
+.bottom-tab-label { font-size: 0.62rem; font-weight: 600; }
+
 .lobby-screen { max-width: 420px; margin: 0 auto; padding: 1.2rem; }
 .lobby-header {
   display: flex;
@@ -545,8 +576,27 @@ button { font-family: inherit; cursor: pointer; }
 }
 .seat.active .seat-avatar { border-color: var(--gold); }
 .seat-name { font-size: 0.68rem; font-weight: 700; max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seat-cardstack { position: relative; margin: 0.15rem 0; }
 .seat-meta { display: flex; gap: 0.4rem; font-size: 0.65rem; opacity: 0.85; }
 .seat-score { color: var(--gold); font-weight: 700; }
+
+.card-stack-badge {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  border-radius: 999px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--felt-dark);
+}
 
 .center-pile {
   flex: 1;
@@ -663,7 +713,7 @@ button { font-family: inherit; cursor: pointer; }
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  height: 122px;
+  height: 230px;
   max-width: 100%;
   overflow: visible;
   position: relative;
@@ -736,6 +786,13 @@ button { font-family: inherit; cursor: pointer; }
   box-shadow: 0 3px 6px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(0,0,0,0.06);
 }
 .card-sm { width: 58px; height: 84px; }
+.card-lg { width: 148px; height: 212px; border-radius: 15px; }
+.card-lg .card-corner { font-size: 1.7rem; }
+.card-lg .card-corner-top { top: 9px; left: 10px; }
+.card-lg .card-corner-bottom { bottom: 9px; right: 10px; }
+.card-lg .card-center-suit { font-size: 3.9rem; }
+.card-lg .card-face-suit { font-size: 1.5rem; bottom: 12px; right: 14px; }
+.card-lg .card-back-emblem { width: 54px; height: 54px; font-size: 1.35rem; }
 .card-black { color: #1a1a1a; }
 .card-red { color: #c0272d; }
 .card-disabled { filter: grayscale(0.55) brightness(0.8); }

@@ -63,11 +63,12 @@ function FaceIllustration({ rank, color }) {
   );
 }
 
-export default function Card({ card, onClick, disabled, small, faceDown }) {
+export default function Card({ card, onClick, disabled, small, large, faceDown, badge }) {
   if (faceDown) {
     return (
-      <div className={`card card-back cb-${getCardBack()} ${small ? 'card-sm' : ''}`}>
+      <div className={`card card-back cb-${getCardBack()} ${small ? 'card-sm' : ''} ${large ? 'card-lg' : ''}`}>
         <div className="card-back-emblem">108</div>
+        {typeof badge === 'number' && <span className="card-stack-badge">{badge}</span>}
       </div>
     );
   }
@@ -75,7 +76,7 @@ export default function Card({ card, onClick, disabled, small, faceDown }) {
   const isFace = card.rank === 'J' || card.rank === 'Q' || card.rank === 'K';
   return (
     <button
-      className={`card ${red ? 'card-red' : 'card-black'} ${small ? 'card-sm' : ''} ${disabled ? 'card-disabled' : ''}`}
+      className={`card ${red ? 'card-red' : 'card-black'} ${small ? 'card-sm' : ''} ${large ? 'card-lg' : ''} ${disabled ? 'card-disabled' : ''}`}
       onClick={onClick}
       disabled={disabled}
       type="button"

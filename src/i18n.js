@@ -128,7 +128,11 @@ export const translations = {
     ach_streak_3: '3 раунда подряд',
     ach_streak_5: '5 раундов подряд',
     ach_games_10: '10 игр сыграно',
-    ach_games_50: '50 игр сыграно'
+    ach_games_50: '50 игр сыграно',
+    tab_profile: 'Профиль',
+    tab_open: 'Открытые',
+    tab_friends: 'Приватные',
+    tab_create: 'Создать игру'
   },
   uz: {
     brand: 'Акопчила 108',
@@ -258,7 +262,11 @@ export const translations = {
     ach_streak_3: "3 раунд кетма-кет",
     ach_streak_5: "5 раунд кетма-кет",
     ach_games_10: "10 та ўйин ўйналди",
-    ach_games_50: "50 та ўйин ўйналди"
+    ach_games_50: "50 та ўйин ўйналди",
+    tab_profile: 'Профиль',
+    tab_open: "Очиқ",
+    tab_friends: "Дўстлар",
+    tab_create: "Хона яратиш"
   }
 };
 
