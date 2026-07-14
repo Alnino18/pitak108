@@ -23,7 +23,6 @@ export default function AchievementsPanel({ uid }) {
 
   return (
     <div className="lobby-card">
-      <h2>🎖️ {t('achievementsTitle')}</h2>
       <div className="achievements-grid">
         {ACHIEVEMENTS.map((a) => {
           const unlocked = unlockedIds.has(a.id);

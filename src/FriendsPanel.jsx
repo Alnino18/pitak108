@@ -44,8 +44,7 @@ export default function FriendsPanel({ uid }) {
 
   return (
     <div className="lobby-card">
-      <h2>👥 {t('friendsTitle')}</h2>
-      <form onSubmit={handleAdd} className="join-form">
+      <form onSubmit={handleAdd} className="friend-form">
         <input
           type="email"
           value={email}

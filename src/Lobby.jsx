@@ -17,7 +17,6 @@ const BACK_LABELS = { classic: 'Classic', diamond: 'Diamond', stripes: 'Stripes'
 export default function Lobby({ onEnterRoom, joinError }) {
   const { user, profile, logout, savePhotoURL } = useAuth();
   const { t } = useLang();
-  const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [scoreLimit, setScoreLimit] = useState(108);
@@ -118,12 +117,6 @@ export default function Lobby({ onEnterRoom, joinError }) {
     }
   }
 
-  async function handleJoin(e) {
-    e.preventDefault();
-    if (!joinCode.trim()) return;
-    doJoin(joinCode.trim());
-  }
-
   const visibleRooms = (openRooms || []).filter((r) => !friendsOnly || friendIds.includes(r.hostId));
 
   return (
@@ -195,22 +188,10 @@ export default function Lobby({ onEnterRoom, joinError }) {
         </button>
       </div>
 
-      <div className="lobby-card">
-        <h2>{t('haveCodeTitle')}</h2>
-        <form onSubmit={handleJoin} className="join-form">
-          <input
-            value={joinCode}
-            onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-            placeholder={t('roomCodePlaceholder')}
-            maxLength={5}
-          />
-          <button className="primary" type="submit" disabled={busy}>{t('joinBtn')}</button>
-        </form>
-      </div>
+      <div className="section-divider"><span>{t('openRoomsTitle')}</span></div>
 
       <div className="lobby-card">
         <div className="open-rooms-header">
-          <h2>{t('openRoomsTitle')}</h2>
           <label className="friends-only-toggle">
             <input type="checkbox" checked={friendsOnly} onChange={(e) => setFriendsOnly(e.target.checked)} />
             {t('friendsOnlyLabel')}
@@ -242,10 +223,11 @@ export default function Lobby({ onEnterRoom, joinError }) {
         )}
       </div>
 
+      <div className="section-divider"><span>{t('friendsTitle')}</span></div>
       <FriendsPanel uid={user.uid} />
 
+      <div className="section-divider"><span>{t('appearanceTitle')}</span></div>
       <div className="lobby-card">
-        <h2>🎨 {t('appearanceTitle')}</h2>
         <p className="muted">{t('themeLabel')}:</p>
         <div className="preset-row">
           {THEMES.map((th) => (
@@ -274,8 +256,13 @@ export default function Lobby({ onEnterRoom, joinError }) {
         </div>
       </div>
 
+      <div className="section-divider"><span>{t('achievementsTitle')}</span></div>
       <AchievementsPanel uid={user.uid} />
+
+      <div className="section-divider"><span>{t('leaderboardTitle')}</span></div>
       <Leaderboard />
+
+      <div className="section-divider"><span>{t('historyTitle')}</span></div>
       <GameHistoryPanel uid={user.uid} />
 
       {joinError && (

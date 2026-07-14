@@ -197,6 +197,35 @@ button { font-family: inherit; cursor: pointer; }
   text-transform: uppercase;
 }
 
+.friend-form { display: flex; gap: 0.5rem; margin-top: 0.2rem; }
+.friend-form input {
+  flex: 1;
+  padding: 0.7rem;
+  border-radius: 10px;
+  border: 1px solid rgba(244,239,227,0.25);
+  background: rgba(244,239,227,0.06);
+  color: var(--cream);
+}
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.4rem 0 0.3rem;
+  color: var(--gold);
+  font-family: 'Fraunces', serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.4), transparent);
+}
+.section-divider span { white-space: nowrap; }
+
 /* Room (lobby / finished states share this) */
 .room-screen { max-width: 480px; margin: 0 auto; padding: 1rem; padding-bottom: 6rem; }
 .room-topbar {

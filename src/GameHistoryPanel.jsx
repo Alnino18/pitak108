@@ -20,7 +20,6 @@ export default function GameHistoryPanel({ uid }) {
 
   return (
     <div className="lobby-card">
-      <h2>📜 {t('historyTitle')}</h2>
       {rows === null && <p className="muted">{t('loading')}</p>}
       {rows && rows.length === 0 && <p className="muted">{t('noHistoryYet')}</p>}
       {rows && rows.length > 0 && (

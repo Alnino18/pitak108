@@ -20,7 +20,6 @@ export default function Leaderboard() {
 
   return (
     <div className="lobby-card">
-      <h2>🏆 {t('leaderboardTitle')}</h2>
       {rows === null && <p className="muted">{t('loading')}</p>}
       {rows && rows.length === 0 && <p className="muted">{t('noWinsYet')}</p>}
       {rows && rows.length > 0 && (
