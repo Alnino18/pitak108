@@ -123,6 +123,14 @@ export default function Room({ code, onLeave }) {
     if (!room?.roundWinnerId) return;
     if (room.roundWinnerId === lastRoundWinner.current) return;
     lastRoundWinner.current = room.roundWinnerId;
+
+    // Статистика серии побед по раундам — только если я реально был участником этого раунда.
+    if (room.players?.[user.uid]) {
+      const won = room.roundWinnerId === user.uid;
+      const wonWithQueen = won && room.lastRoundWinCard?.rank === 'Q';
+      import('./statsApi').then(({ recordRoundResult }) => recordRoundResult(user.uid, won, wonWithQueen).catch(() => {}));
+    }
+
     if (room.status === 'playing') {
       const name = room.players[room.roundWinnerId]?.name || '?';
       setRoundBanner(`${t('roundWonPrefix')} ${name} ${t('newDealSuffix')}`);
@@ -147,6 +155,22 @@ export default function Room({ code, onLeave }) {
         import('./statsApi').then(({ recordWin }) => recordWin(user.uid).catch(() => {}));
       } else if (room.players?.[user.uid]) {
         import('./statsApi').then(({ recordGamePlayed }) => recordGamePlayed(user.uid).catch(() => {}));
+      }
+      // Историю сохраняет только хост — чтобы запись не дублировалась от каждого клиента.
+      if (isHost && room.players) {
+        const playersSnapshot = {};
+        for (const pid of Object.keys(room.players)) {
+          playersSnapshot[pid] = { name: room.players[pid].name, score: room.players[pid].score };
+        }
+        import('./statsApi').then(({ recordGameHistory }) =>
+          recordGameHistory({
+            roomCode: code,
+            mode: room.settings?.mode,
+            players: playersSnapshot,
+            winnerId: room.winnerId,
+            winnerName: room.players[room.winnerId]?.name || '?'
+          }).catch(() => {})
+        );
       }
     }
     if (room?.status !== 'finished') wasFinished.current = false;

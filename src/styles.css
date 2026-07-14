@@ -225,6 +225,56 @@ button { font-family: inherit; cursor: pointer; }
 .invite-actions { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; }
 .invite-status { margin-top: 0.5rem; }
 
+.avatar-photo { border-radius: 50%; object-fit: cover; display: block; }
+
+.lobby-header-left { display: flex; align-items: center; gap: 0.5rem; }
+.avatar-upload-btn {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.avatar-edit-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  font-size: 0.65rem;
+  background: var(--gold);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.achievements-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 0.5rem; margin-top: 0.5rem; }
+.achievement-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.5rem 0.3rem;
+  border-radius: 10px;
+  background: rgba(244,239,227,0.05);
+  text-align: center;
+}
+.achievement-badge.unlocked { background: rgba(212,175,55,0.15); border: 1px solid var(--gold); }
+.achievement-badge.locked { opacity: 0.35; filter: grayscale(1); }
+.achievement-icon { font-size: 1.5rem; }
+.achievement-title { font-size: 0.62rem; line-height: 1.1; }
+
+.history-list { list-style: none; padding: 0; margin: 0.5rem 0 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.history-item { background: rgba(244,239,227,0.05); border-radius: 10px; padding: 0.5rem 0.7rem; }
+.history-item.won { border-left: 3px solid var(--gold); }
+.history-main { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; }
+.history-meta { font-size: 0.75rem; margin-top: 0.15rem; }
+
+.open-rooms-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem; }
+.friends-only-toggle { display: flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; opacity: 0.85; }
+
 .leaderboard-list { list-style: none; padding: 0; margin: 0.5rem 0 0; display: flex; flex-direction: column; gap: 0.4rem; }
 .leaderboard-item {
   display: flex;

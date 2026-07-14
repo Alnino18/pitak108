@@ -38,6 +38,11 @@ export function AuthProvider({ children }) {
     const data = {
       displayName,
       avatar: avatar || '🂡',
+      email: email.toLowerCase(),
+      photoURL: null,
+      wins: 0,
+      gamesPlayed: 0,
+      badges: [],
       createdAt: serverTimestamp()
     };
     await setDoc(ref, data);
@@ -56,13 +61,24 @@ export function AuthProvider({ children }) {
   async function saveProfile(displayName, avatar) {
     if (!user) return;
     const ref = doc(db, 'users', user.uid);
-    const data = { displayName, avatar };
+    const data = { displayName, avatar, email: (user.email || '').toLowerCase() };
     await setDoc(ref, data, { merge: true });
     setProfile((p) => ({ ...p, ...data }));
   }
 
+  async function savePhotoURL(photoURL) {
+    if (!user) return;
+    const ref = doc(db, 'users', user.uid);
+    await setDoc(ref, { photoURL }, { merge: true });
+    setProfile((p) => ({ ...p, photoURL }));
+  }
+
+  function refreshProfile(patch) {
+    setProfile((p) => ({ ...p, ...patch }));
+  }
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, register, login, logout, saveProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, register, login, logout, saveProfile, savePhotoURL, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

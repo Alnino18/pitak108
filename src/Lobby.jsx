@@ -1,17 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useLang } from './LangContext';
 import LangSwitch from './LangSwitch';
+import Avatar from './Avatar';
 import { isSoundOn, setSoundOn } from './sounds';
 import { THEMES, CARD_BACKS, getTheme, setTheme, getCardBack, setCardBack } from './prefs';
 import Leaderboard from './Leaderboard';
+import AchievementsPanel from './AchievementsPanel';
+import GameHistoryPanel from './GameHistoryPanel';
+import FriendsPanel from './FriendsPanel';
 
 const SCORE_PRESETS = [108, 150, 200];
 const THEME_ICONS = { green: '🟢', red: '🔴', blue: '🔵', dark: '⚫' };
 const BACK_LABELS = { classic: 'Classic', diamond: 'Diamond', stripes: 'Stripes' };
 
 export default function Lobby({ onEnterRoom, joinError }) {
-  const { user, profile, logout } = useAuth();
+  const { user, profile, logout, savePhotoURL } = useAuth();
   const { t } = useLang();
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
@@ -22,6 +26,10 @@ export default function Lobby({ onEnterRoom, joinError }) {
   const [theme, setThemeState] = useState(getTheme());
   const [cardBack, setCardBackState] = useState(getCardBack());
   const [openRooms, setOpenRooms] = useState(null); // null = ещё грузится
+  const [friendsOnly, setFriendsOnly] = useState(false);
+  const [friendIds, setFriendIds] = useState([]);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     let unsub = null;
@@ -35,6 +43,19 @@ export default function Lobby({ onEnterRoom, joinError }) {
       if (unsub) unsub();
     };
   }, []);
+
+  useEffect(() => {
+    let unsub = null;
+    let cancelled = false;
+    import('./friendsApi').then(({ subscribeFriends }) => {
+      if (cancelled) return;
+      unsub = subscribeFriends(user.uid, (list) => setFriendIds(list.map((f) => f.uid)));
+    });
+    return () => {
+      cancelled = true;
+      if (unsub) unsub();
+    };
+  }, [user.uid]);
 
   function toggleSound() {
     const next = !soundOn;
@@ -50,6 +71,23 @@ export default function Lobby({ onEnterRoom, joinError }) {
   function chooseCardBack(cb) {
     setCardBack(cb);
     setCardBackState(cb);
+  }
+
+  async function handlePhotoChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoUploading(true);
+    setError('');
+    try {
+      const { uploadAvatarPhoto } = await import('./photoApi');
+      const url = await uploadAvatarPhoto(user.uid, file);
+      await savePhotoURL(url);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setPhotoUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   }
 
   async function handleCreate() {
@@ -86,11 +124,17 @@ export default function Lobby({ onEnterRoom, joinError }) {
     doJoin(joinCode.trim());
   }
 
+  const visibleRooms = (openRooms || []).filter((r) => !friendsOnly || friendIds.includes(r.hostId));
+
   return (
     <div className="lobby-screen">
       <div className="lobby-header">
-        <div>
-          <span className="lobby-avatar">{profile?.avatar}</span>
+        <div className="lobby-header-left">
+          <button className="avatar-upload-btn" onClick={() => fileInputRef.current?.click()} type="button" disabled={photoUploading}>
+            <Avatar photoURL={profile?.photoURL} emoji={profile?.avatar} size={36} className="lobby-avatar" />
+            <span className="avatar-edit-badge">✏️</span>
+          </button>
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
           <span className="lobby-name">{profile?.displayName}</span>
         </div>
         <div className="lobby-header-actions">
@@ -103,6 +147,7 @@ export default function Lobby({ onEnterRoom, joinError }) {
       </div>
 
       <h1 className="brand">{t('brand')}</h1>
+      {photoUploading && <p className="muted" style={{ textAlign: 'center' }}>{t('uploadingPhoto')}</p>}
 
       <div className="lobby-card">
         <h2>{t('ownRoomTitle')}</h2>
@@ -164,12 +209,18 @@ export default function Lobby({ onEnterRoom, joinError }) {
       </div>
 
       <div className="lobby-card">
-        <h2>{t('openRoomsTitle')}</h2>
+        <div className="open-rooms-header">
+          <h2>{t('openRoomsTitle')}</h2>
+          <label className="friends-only-toggle">
+            <input type="checkbox" checked={friendsOnly} onChange={(e) => setFriendsOnly(e.target.checked)} />
+            {t('friendsOnlyLabel')}
+          </label>
+        </div>
         {openRooms === null && <p className="muted">{t('loading')}</p>}
-        {openRooms && openRooms.length === 0 && <p className="muted">{t('noOpenRooms')}</p>}
-        {openRooms && openRooms.length > 0 && (
+        {openRooms && visibleRooms.length === 0 && <p className="muted">{t('noOpenRooms')}</p>}
+        {openRooms && visibleRooms.length > 0 && (
           <ul className="open-rooms-list">
-            {openRooms.map((r) => {
+            {visibleRooms.map((r) => {
               const playerCount = (r.order?.length || 0) + (r.pendingJoiners?.length || 0);
               const isPlaying = r.status === 'playing';
               return (
@@ -190,6 +241,8 @@ export default function Lobby({ onEnterRoom, joinError }) {
           </ul>
         )}
       </div>
+
+      <FriendsPanel uid={user.uid} />
 
       <div className="lobby-card">
         <h2>🎨 {t('appearanceTitle')}</h2>
@@ -221,7 +274,9 @@ export default function Lobby({ onEnterRoom, joinError }) {
         </div>
       </div>
 
+      <AchievementsPanel uid={user.uid} />
       <Leaderboard />
+      <GameHistoryPanel uid={user.uid} />
 
       {joinError && (
         <div className="error">{t('linkJoinFailed')}: {joinError}</div>
