@@ -470,13 +470,40 @@ button { font-family: inherit; cursor: pointer; }
 .game-felt {
   position: relative;
   min-height: 100vh;
-  padding: 0.8rem 0.8rem 0;
+  padding: 0.8rem 0.8rem 1.2rem;
   background:
     radial-gradient(ellipse at 50% 32%, var(--felt-light) 0%, var(--felt) 48%, var(--felt-dark) 100%);
   box-shadow: inset 0 0 120px rgba(0,0,0,0.55);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.table-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 12;
+  background: var(--ink);
+  border-top: 1px solid rgba(212,175,55,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0));
+  max-width: 480px;
+  margin: 0 auto;
+}
+.footer-profile { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.footer-name { font-weight: 700; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
+.footer-stat { font-size: 0.85rem; font-weight: 700; color: var(--gold); white-space: nowrap; }
+
+.turn-arrow {
+  text-align: center;
+  font-size: 1.4rem;
+  color: rgba(244,239,227,0.35);
+  line-height: 1;
 }
 
 .chat-toggle {
@@ -624,6 +651,54 @@ button { font-family: inherit; cursor: pointer; }
   padding: 0.05rem 0.4rem;
 }
 .discard-slot { transform: translateY(-4px) rotate(-3deg); }
+.discard-stack { position: relative; }
+.discard-ghost {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: linear-gradient(160deg, #ffffff 0%, var(--cream) 100%);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.discard-ghost-1 { transform: rotate(6deg) translate(3px, 1px); }
+.discard-ghost-2 { transform: rotate(-9deg) translate(-4px, 2px); opacity: 0.85; }
+
+.active-suit-badge {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+}
+.active-suit-badge.suit-heart { color: #c0272d; }
+.active-suit-badge.suit-diamond { color: #1f6fd6; }
+.active-suit-badge.suit-club { color: #1e8a4c; }
+.active-suit-badge.suit-spade { color: #1a1a1a; }
+
+.move-hints {
+  position: absolute;
+  right: 62px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  white-space: nowrap;
+  text-align: right;
+}
+.move-hint {
+  font-size: 0.72rem;
+  color: rgba(244,239,227,0.45);
+  font-style: italic;
+}
+
 .pile-hints { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: center; margin-bottom: 0.3rem; }
 .hint-chip {
   font-size: 0.72rem;
@@ -793,8 +868,10 @@ button { font-family: inherit; cursor: pointer; }
 .card-lg .card-center-suit { font-size: 3.9rem; }
 .card-lg .card-face-suit { font-size: 1.5rem; bottom: 12px; right: 14px; }
 .card-lg .card-back-emblem { width: 54px; height: 54px; font-size: 1.35rem; }
-.card-black { color: #1a1a1a; }
-.card-red { color: #c0272d; }
+.suit-spade { color: #1a1a1a; }
+.suit-heart { color: #c0272d; }
+.suit-club { color: #1e8a4c; }
+.suit-diamond { color: #1f6fd6; }
 .card-disabled { filter: grayscale(0.55) brightness(0.8); }
 
 .card-corner {
@@ -896,7 +973,10 @@ button { font-family: inherit; cursor: pointer; }
   color: var(--cream);
   font-size: 1.3rem;
 }
-.suit-btn.red { color: var(--red); }
+.suit-btn.suit-btn-heart { color: #c0272d; }
+.suit-btn.suit-btn-diamond { color: #1f6fd6; }
+.suit-btn.suit-btn-club { color: #1e8a4c; }
+.suit-btn.suit-btn-spade { color: var(--cream); }
 
 /* Install prompt */
 .install-banner {
@@ -953,7 +1033,7 @@ button { font-family: inherit; cursor: pointer; }
 .chat-fab {
   position: fixed;
   right: 16px;
-  bottom: 16px;
+  bottom: 68px;
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -974,7 +1054,7 @@ button { font-family: inherit; cursor: pointer; }
   background: var(--ink);
   border-top: 1px solid var(--gold);
   border-radius: 16px 16px 0 0;
-  z-index: 9;
+  z-index: 16;
   max-height: 50vh;
   display: flex;
   flex-direction: column;

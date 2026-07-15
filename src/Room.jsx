@@ -378,17 +378,34 @@ export default function Room({ code, onLeave }) {
         })}
       </div>
 
+      <div className="turn-arrow turn-arrow-top">↷</div>
+
       <div className="center-pile">
         <div className="pile-stack" title={`${t('deckTitle')}: ${room.deck?.length ?? 0}`}>
           <Card faceDown small />
           <span className="pile-count">{room.deck?.length ?? 0}</span>
         </div>
         <div className="discard-slot">
-          {top && <Card card={top} disabled />}
+          <div className="discard-stack">
+            <div className="discard-ghost discard-ghost-2" />
+            <div className="discard-ghost discard-ghost-1" />
+            {top && <Card card={top} disabled />}
+          </div>
         </div>
+        {room.activeSuit && (
+          <div className={`active-suit-badge suit-${room.activeSuit === '♥' ? 'heart' : room.activeSuit === '♦' ? 'diamond' : room.activeSuit === '♣' ? 'club' : 'spade'}`}>
+            {room.activeSuit}
+          </div>
+        )}
+        {isMyTurn && (
+          <div className="move-hints">
+            {(room.pendingDraw > 0 || drawCount < maxDraws) && <div className="move-hint">{t('takeCard')}</div>}
+            {legal.length > 0 && <div className="move-hint">{t('playFromHandHint')}</div>}
+          </div>
+        )}
       </div>
+      <div className="turn-arrow turn-arrow-bottom">↶</div>
       <div className="pile-hints">
-        {room.activeSuit && <span className="hint-chip">{t('suit')}: {room.activeSuit}</span>}
         {room.pendingDraw > 0 && (
           <span className="hint-chip danger">
             +{room.pendingDraw} {t('cardsWord')}{room.pendingDrawKind ? ` (${t('fightBackOnly')} ${penaltyKindLabel[room.pendingDrawKind]})` : ''}
@@ -465,13 +482,22 @@ export default function Room({ code, onLeave }) {
         )}
       </div>
 
+      <div className="table-footer">
+        <div className="footer-profile">
+          <Avatar photoURL={room.players[uid]?.photoURL} emoji={room.players[uid]?.avatar} size={34} />
+          <span className="footer-name">{room.players[uid]?.name}</span>
+        </div>
+        <div className="footer-stat">🏅 {room.players[uid]?.score ?? 0}</div>
+        <div className="footer-stat">🂠 {myHand.length}</div>
+      </div>
+
       {pendingQueen && (
         <div className="modal-backdrop">
           <div className="modal">
             <h3>{t('chooseSuit')}</h3>
             <div className="suit-choices">
               {SUITS.map((s) => (
-                <button key={s} className={`suit-btn ${s === '♥' || s === '♦' ? 'red' : ''}`} onClick={() => chooseSuit(s)} type="button">
+                <button key={s} className={`suit-btn suit-btn-${s === '♥' ? 'heart' : s === '♦' ? 'diamond' : s === '♣' ? 'club' : 'spade'}`} onClick={() => chooseSuit(s)} type="button">
                   {s}
                 </button>
               ))}
