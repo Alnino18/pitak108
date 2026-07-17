@@ -470,7 +470,7 @@ button { font-family: inherit; cursor: pointer; }
 .game-felt {
   position: relative;
   min-height: 100vh;
-  padding: 0.8rem 0.8rem 1.2rem;
+  padding: 0.8rem 0.8rem 4.8rem;
   background:
     radial-gradient(ellipse at 50% 32%, var(--felt-light) 0%, var(--felt) 48%, var(--felt-dark) 100%);
   box-shadow: inset 0 0 120px rgba(0,0,0,0.55);
@@ -490,11 +490,16 @@ button { font-family: inherit; cursor: pointer; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 1rem;
+  gap: 0.5rem;
+  padding: 0.5rem 0.8rem;
   padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0));
   max-width: 480px;
   margin: 0 auto;
 }
+.footer-actions { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; }
+.secondary.small { padding: 0.4rem 0.7rem; font-size: 0.75rem; border-radius: 8px; }
+.fab-sm { width: 42px; height: 42px; font-size: 1rem; }
+.fab-sm .fab-badge { font-size: 0.55rem; }
 .footer-profile { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
 .footer-name { font-weight: 700; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
 .footer-stat { font-size: 0.85rem; font-weight: 700; color: var(--gold); white-space: nowrap; }
@@ -568,20 +573,20 @@ button { font-family: inherit; cursor: pointer; }
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 0.7rem 1.4rem;
-  padding: 0.6rem 0.4rem 0.2rem;
+  gap: 0.4rem 0.9rem;
+  padding: 0.3rem 0.4rem 0.1rem;
 }
 .seat {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.15rem;
-  padding: 0.35rem 0.55rem;
+  gap: 0.1rem;
+  padding: 0.3rem 0.45rem;
   border-radius: 12px;
   border: 1.5px solid rgba(0,0,0,0.25);
   background: linear-gradient(160deg, rgba(0,0,0,0.1), rgba(0,0,0,0.25));
   box-shadow: 0 2px 5px rgba(0,0,0,0.25);
-  min-width: 54px;
+  min-width: 50px;
   transition: box-shadow 0.2s ease;
 }
 .seat.active {
@@ -602,8 +607,21 @@ button { font-family: inherit; cursor: pointer; }
   box-shadow: inset 0 1px 2px rgba(255,255,255,0.15);
 }
 .seat.active .seat-avatar { border-color: var(--gold); }
+.seat-avatar-wrap { position: relative; }
+.seat-mini-count {
+  position: absolute;
+  bottom: -4px;
+  right: -8px;
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 0.58rem;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 0 4px;
+  line-height: 1.3;
+  border: 1px solid var(--felt-dark);
+}
 .seat-name { font-size: 0.68rem; font-weight: 700; max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.seat-cardstack { position: relative; margin: 0.15rem 0; }
 .seat-meta { display: flex; gap: 0.4rem; font-size: 0.65rem; opacity: 0.85; }
 .seat-score { color: var(--gold); font-weight: 700; }
 
@@ -872,7 +890,7 @@ button { font-family: inherit; cursor: pointer; }
 .suit-heart { color: #c0272d; }
 .suit-club { color: #1e8a4c; }
 .suit-diamond { color: #1f6fd6; }
-.card-disabled { filter: grayscale(0.55) brightness(0.8); }
+.card-disabled { /* карты остаются в полном цвете — недоступность видна по курсору/невозможности клика */ }
 
 .card-corner {
   position: absolute;
@@ -1033,7 +1051,7 @@ button { font-family: inherit; cursor: pointer; }
 .chat-fab {
   position: fixed;
   right: 16px;
-  bottom: 68px;
+  bottom: 16px;
   width: 52px;
   height: 52px;
   border-radius: 50%;

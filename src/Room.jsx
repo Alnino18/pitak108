@@ -363,13 +363,11 @@ export default function Room({ code, onLeave }) {
           const active = pid === room.currentPlayerId;
           return (
             <div key={pid} className={`seat ${active ? 'active' : ''} ${p.eliminated ? 'eliminated' : ''}`}>
-              <div className="seat-avatar"><Avatar photoURL={p.photoURL} emoji={p.avatar} size={30} /></div>
+              <div className="seat-avatar-wrap">
+                <div className="seat-avatar"><Avatar photoURL={p.photoURL} emoji={p.avatar} size={30} /></div>
+                {!p.eliminated && <span className="seat-mini-count">🂠{cardCount}</span>}
+              </div>
               <div className="seat-name">{p.name}</div>
-              {!p.eliminated && (
-                <div className="seat-cardstack">
-                  <Card faceDown small badge={cardCount} />
-                </div>
-              )}
               <div className="seat-meta">
                 <span className="seat-score">🏅{p.score}</span>
               </div>
@@ -463,16 +461,6 @@ export default function Room({ code, onLeave }) {
           })}
         </div>
 
-        <div className="hand-actions">
-          <button className="fab" disabled={!canDraw} onClick={() => safe(async () => { await drawCardInRoom(code, uid); drawCardSound(); })} type="button">
-            🂠<span className="fab-badge">{room.pendingDraw > 0 ? room.pendingDraw : '+1'}</span>
-          </button>
-          {canPass && (
-            <button className="secondary" onClick={() => safe(() => passTurnInRoom(code, uid))} type="button">
-              {t('skipTurn')}
-            </button>
-          )}
-        </div>
         {isMyTurn && drawCount > 0 && room.pendingDraw === 0 && (
           <div className="muted hand-hint">
             {drawsLeft > 0
@@ -489,6 +477,16 @@ export default function Room({ code, onLeave }) {
         </div>
         <div className="footer-stat">🏅 {room.players[uid]?.score ?? 0}</div>
         <div className="footer-stat">🂠 {myHand.length}</div>
+        <div className="footer-actions">
+          {canPass && (
+            <button className="secondary small" onClick={() => safe(() => passTurnInRoom(code, uid))} type="button">
+              {t('skipTurn')}
+            </button>
+          )}
+          <button className="fab fab-sm" disabled={!canDraw} onClick={() => safe(async () => { await drawCardInRoom(code, uid); drawCardSound(); })} type="button">
+            🂠<span className="fab-badge">{room.pendingDraw > 0 ? room.pendingDraw : '+1'}</span>
+          </button>
+        </div>
       </div>
 
       {pendingQueen && (
@@ -517,7 +515,7 @@ export default function Room({ code, onLeave }) {
         </div>
       )}
 
-      <ChatDrawer code={code} uid={uid} name={profile.displayName} open={chatOpen} onToggle={() => setChatOpen((v) => !v)} t={t} />
+      <ChatDrawer code={code} uid={uid} name={profile.displayName} open={chatOpen} onToggle={() => setChatOpen((v) => !v)} t={t} showFab={false} />
     </div>
   );
 }
@@ -541,10 +539,10 @@ function Scoreboard({ room, compact, currentPlayerId, t }) {
   );
 }
 
-function ChatDrawer({ open, onToggle, t, ...chatProps }) {
+function ChatDrawer({ open, onToggle, t, showFab = true, ...chatProps }) {
   return (
     <>
-      {!open && (
+      {!open && showFab && (
         <button className="chat-fab" onClick={onToggle} type="button">💬</button>
       )}
       {open && (
