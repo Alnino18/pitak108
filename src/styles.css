@@ -896,7 +896,6 @@ button { font-family: inherit; cursor: pointer; }
   opacity: 1 !important;
   filter: none !important;
   -webkit-text-fill-color: initial !important;
-  color: inherit;
   cursor: default;
 }
 
