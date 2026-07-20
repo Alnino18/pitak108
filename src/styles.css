@@ -890,7 +890,15 @@ button { font-family: inherit; cursor: pointer; }
 .suit-heart { color: #c0272d; }
 .suit-club { color: #1e8a4c; }
 .suit-diamond { color: #1f6fd6; }
-.card-disabled { /* карты остаются в полном цвете — недоступность видна по курсору/невозможности клика */ }
+.card-disabled,
+.card:disabled,
+.card[aria-disabled="true"] {
+  opacity: 1 !important;
+  filter: none !important;
+  -webkit-text-fill-color: initial !important;
+  color: inherit;
+  cursor: default;
+}
 
 .card-corner {
   position: absolute;

@@ -2,9 +2,23 @@
 // геометрический минималистичный стиль, никаких заимствованных изображений.
 import { getCardBack } from './prefs';
 
+// 4-цветная схема мастей: ♥ красный, ♣ зелёный, ♦ синий, ♠ чёрный.
+const SUIT_COLORS = {
+  '♥': '#c0272d',
+  '♣': '#1e8a4c',
+  '♦': '#1f6fd6',
+  '♠': '#1a1a1a'
+};
+const SUIT_CLASS = {
+  '♥': 'suit-heart',
+  '♣': 'suit-club',
+  '♦': 'suit-diamond',
+  '♠': 'suit-spade'
+};
+
 function FaceIllustration({ rank, color }) {
   const stroke = color;
-  const fillLight = color === '#c0272d' ? '#f3d3d3' : '#d9d9d9';
+  const fillLight = '#e7e2d3';
 
   if (rank === 'K') {
     return (
@@ -72,13 +86,14 @@ export default function Card({ card, onClick, disabled, small, large, faceDown, 
       </div>
     );
   }
-  const red = card.suit === '♥' || card.suit === '♦';
+  const suitClass = SUIT_CLASS[card.suit] || 'suit-spade';
+  const suitColor = SUIT_COLORS[card.suit] || '#1a1a1a';
   const isFace = card.rank === 'J' || card.rank === 'Q' || card.rank === 'K';
   return (
     <button
-      className={`card ${red ? 'card-red' : 'card-black'} ${small ? 'card-sm' : ''} ${large ? 'card-lg' : ''} ${disabled ? 'card-disabled' : ''}`}
-      onClick={onClick}
-      disabled={disabled}
+      className={`card ${suitClass} ${small ? 'card-sm' : ''} ${large ? 'card-lg' : ''} ${disabled ? 'card-disabled' : ''}`}
+      onClick={disabled ? undefined : onClick}
+      aria-disabled={disabled || undefined}
       type="button"
     >
       <span className="card-corner card-corner-top">
@@ -87,7 +102,7 @@ export default function Card({ card, onClick, disabled, small, large, faceDown, 
       </span>
       {isFace ? (
         <span className="card-face-illustration">
-          <FaceIllustration rank={card.rank} color={red ? '#c0272d' : '#1a1a1a'} />
+          <FaceIllustration rank={card.rank} color={suitColor} />
           <span className="card-face-suit">{card.suit}</span>
         </span>
       ) : (
