@@ -750,7 +750,71 @@ button { font-family: inherit; cursor: pointer; }
   white-space: nowrap;
 }
 
-.table-error.round-banner {
+.table-error.round-reveal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 18;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  background: rgba(0,0,0,0.72);
+  animation: fadeIn 0.3s ease;
+  padding: 1.2rem;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.round-reveal-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1.3rem;
+  color: var(--gold);
+  font-weight: 700;
+  text-align: center;
+}
+.round-reveal-players {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  max-width: 360px;
+}
+.reveal-player {
+  background: rgba(244,239,227,0.07);
+  border: 1px solid rgba(244,239,227,0.15);
+  border-radius: 12px;
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.reveal-player.reveal-winner {
+  border-color: var(--gold);
+  background: rgba(212,175,55,0.12);
+}
+.reveal-player-name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.reveal-winner-badge { margin-left: auto; }
+.reveal-cards { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.reveal-card-chip {
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: rgba(244,239,227,0.12);
+  border-radius: 6px;
+  padding: 0.15rem 0.4rem;
+}
+.reveal-card-chip.suit-heart { color: #c0272d; }
+.reveal-card-chip.suit-diamond { color: #1f6fd6; }
+.reveal-card-chip.suit-club { color: #1e8a4c; }
+.reveal-card-chip.suit-spade { color: #1a1a1a; background: rgba(244,239,227,0.75); }
+.reveal-no-cards { font-size: 0.78rem; opacity: 0.6; }
+.reveal-penalty { font-size: 0.8rem; color: var(--danger); font-weight: 700; text-align: right; }
+
+.round-banner {
   background: rgba(212,175,55,0.95);
   color: var(--ink);
   font-weight: 700;

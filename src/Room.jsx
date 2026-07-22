@@ -14,6 +14,7 @@ import {
   checkAfkSkip
 } from './roomApi';
 import { canPlay, matchesPendingKind } from './rules';
+import { RANK_VALUE } from './deck';
 import Card from './Card';
 import Chat from './Chat';
 import VoiceChat from './VoiceChat';
@@ -32,6 +33,7 @@ export default function Room({ code, onLeave }) {
   const [pendingQueen, setPendingQueen] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [roundBanner, setRoundBanner] = useState(null);
+  const [roundReveal, setRoundReveal] = useState(null); // {players, hands} — показываем 6 сек
   const [shareStatus, setShareStatus] = useState('');
   const [statsOpen, setStatsOpen] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 400));
@@ -137,11 +139,21 @@ export default function Room({ code, onLeave }) {
       import('./statsApi').then(({ recordRoundResult }) => recordRoundResult(user.uid, won, wonWithQueen).catch(() => {}));
     }
 
-    if (room.status === 'playing') {
+    // Показываем карты на руках у всех игроков + их очки 6 секунд после окончания раунда.
+    // В этот момент hands ещё содержат старые карты (до новой раздачи).
+    if (room.status === 'playing' && room.hands && room.players) {
+      const snapshot = {
+        players: room.players,
+        hands: room.hands,
+        winnerId: room.roundWinnerId
+      };
+      setRoundReveal(snapshot);
+      const revealTimer = setTimeout(() => setRoundReveal(null), 6000);
+
       const name = room.players[room.roundWinnerId]?.name || '?';
       setRoundBanner(`${t('roundWonPrefix')} ${name} ${t('newDealSuffix')}`);
-      const timer = setTimeout(() => setRoundBanner(null), 3500);
-      return () => clearTimeout(timer);
+      const bannerTimer = setTimeout(() => setRoundBanner(null), 3500);
+      return () => { clearTimeout(revealTimer); clearTimeout(bannerTimer); };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.roundWinnerId, room?.status]);
@@ -417,6 +429,43 @@ export default function Room({ code, onLeave }) {
 
       {error && <div className="table-error">{error}</div>}
       {roundBanner && !error && <div className="table-error round-banner">{roundBanner}</div>}
+
+      {roundReveal && (
+        <div className="round-reveal-overlay">
+          <div className="round-reveal-title">
+            🏆 {roundReveal.players[roundReveal.winnerId]?.name}
+          </div>
+          <div className="round-reveal-players">
+            {Object.entries(roundReveal.players).map(([pid, p]) => {
+              const hand = roundReveal.hands[pid] || [];
+              const penalty = hand.reduce((s, c) => s + (RANK_VALUE[c.rank] || 0), 0);
+              const isWinner = pid === roundReveal.winnerId;
+              return (
+                <div key={pid} className={`reveal-player ${isWinner ? 'reveal-winner' : ''}`}>
+                  <div className="reveal-player-name">
+                    <Avatar photoURL={p.photoURL} emoji={p.avatar} size={24} />
+                    <span>{p.name}</span>
+                    {isWinner && <span className="reveal-winner-badge">🏆</span>}
+                  </div>
+                  <div className="reveal-cards">
+                    {isWinner
+                      ? <span className="reveal-no-cards">0 {t('cardsWord')}</span>
+                      : hand.map(c => (
+                          <span key={c.id} className={`reveal-card-chip suit-${c.suit === '♥' ? 'heart' : c.suit === '♦' ? 'diamond' : c.suit === '♣' ? 'club' : 'spade'}`}>
+                            {c.rank}{c.suit}
+                          </span>
+                        ))
+                    }
+                  </div>
+                  {!isWinner && (
+                    <div className="reveal-penalty">+{penalty} {t('scoreSuffix')}</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="floating-reactions">
         {floatingReactions.map((r) => (
