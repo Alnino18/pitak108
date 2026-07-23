@@ -29,14 +29,18 @@ export default defineConfig({
     })
   ],
   build: {
+    target: 'esnext',
+    minify: 'esbuild',
     rollupOptions: {
       output: {
         manualChunks: {
-          // Firebase SDK меняется редко — выносим отдельно, чтобы браузер
-          // не перекачивал его заново при каждом обновлении игры.
-          'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore']
+          'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          'vendor-react': ['react', 'react-dom']
         }
       }
+    },
+    esbuildOptions: {
+      drop: ['console', 'debugger']
     }
   }
 });
