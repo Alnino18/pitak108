@@ -231,18 +231,34 @@ export default function Room({ code, onLeave }) {
       setPendingQueen(card);
       return;
     }
+    // Optimistic update — убираем карту из руки немедленно (до ответа Firestore),
+    // чтобы ход ощущался мгновенным. Если Firestore вернёт ошибку — карта вернётся.
+    const prevHand = myHand;
+    setMyHand((h) => h.filter((c) => c.id !== card.id));
+    playCardSound();
     safe(async () => {
-      await playCardInRoom(code, uid, card.id, null);
-      playCardSound();
+      try {
+        await playCardInRoom(code, uid, card.id, null);
+      } catch (err) {
+        setMyHand(prevHand); // откатываем при ошибке
+        throw err;
+      }
     });
   }
 
   function chooseSuit(suit) {
     const card = pendingQueen;
     setPendingQueen(null);
+    const prevHand = myHand;
+    setMyHand((h) => h.filter((c) => c.id !== card.id));
+    playCardSound();
     safe(async () => {
-      await playCardInRoom(code, uid, card.id, suit);
-      playCardSound();
+      try {
+        await playCardInRoom(code, uid, card.id, suit);
+      } catch (err) {
+        setMyHand(prevHand);
+        throw err;
+      }
     });
   }
 
@@ -395,7 +411,34 @@ export default function Room({ code, onLeave }) {
           <Card faceDown small />
           <span className="pile-count">{room.deck?.length ?? 0}</span>
         </div>
-        <div className="discard-slot">
+        <div className="discard-slot"
+          onDragOver={isMyTurn ? (e) => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); } : undefined}
+          onDragLeave={isMyTurn ? (e) => { e.currentTarget.classList.remove('drag-over'); } : undefined}
+          onDrop={isMyTurn ? (e) => {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            const cardId = e.dataTransfer.getData('cardId');
+            const cardRank = e.dataTransfer.getData('cardRank');
+            if (!cardId) return;
+            const card = myHand.find((c) => c.id === cardId);
+            if (!card) return;
+            if (cardRank === 'Q') {
+              setPendingQueen(card);
+            } else {
+              const prevHand = myHand;
+              setMyHand((h) => h.filter((c) => c.id !== cardId));
+              playCardSound();
+              safe(async () => {
+                try {
+                  await playCardInRoom(code, uid, cardId, null);
+                } catch (err) {
+                  setMyHand(prevHand);
+                  throw err;
+                }
+              });
+            }
+          } : undefined}
+        >
           <div className="discard-stack">
             <div className="discard-ghost discard-ghost-2" />
             <div className="discard-ghost discard-ghost-1" />
@@ -480,12 +523,16 @@ export default function Room({ code, onLeave }) {
       </div>
 
       <div className="hand-dock">
-        <div className="hand-fan" style={{ '--n': n }}>
+        <div
+          className="hand-fan"
+          style={{ '--n': n }}
+        >
           {myHand.map((card, i) => {
             const mid = (n - 1) / 2;
             const offset = i - mid;
             const rot = n > 1 ? (offset / mid) * (spread / 2) : 0;
             const lift = Math.abs(offset) * 1.3;
+            const isPlayable = isMyTurn && legal.some((c) => c.id === card.id);
             return (
               <div
                 key={card.id}
@@ -497,13 +544,19 @@ export default function Room({ code, onLeave }) {
                   animationDelay: justDealt ? `${i * 0.07}s` : '0s',
                   zIndex: i
                 }}
+                draggable={isPlayable}
+                onDragStart={isPlayable ? (e) => {
+                  e.dataTransfer.setData('cardId', card.id);
+                  e.dataTransfer.setData('cardRank', card.rank);
+                  e.dataTransfer.effectAllowed = 'move';
+                } : undefined}
               >
                 <Card
                   card={card}
                   small={small}
                   large
                   onClick={() => handleCardClick(card)}
-                  disabled={!isMyTurn || !legal.some((c) => c.id === card.id)}
+                  disabled={!isMyTurn || !isPlayable}
                 />
               </div>
             );

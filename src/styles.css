@@ -668,7 +668,11 @@ button { font-family: inherit; cursor: pointer; }
   border-radius: 999px;
   padding: 0.05rem 0.4rem;
 }
-.discard-slot { transform: translateY(-4px) rotate(-3deg); }
+.discard-slot { transform: translateY(-4px) rotate(-3deg); transition: transform 0.15s ease; }
+.discard-slot.drag-over {
+  transform: translateY(-8px) rotate(0deg) scale(1.06);
+  filter: drop-shadow(0 0 14px rgba(212,175,55,0.7));
+}
 .discard-stack { position: relative; }
 .discard-ghost {
   position: absolute;

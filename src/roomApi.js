@@ -123,11 +123,72 @@ async function transact(code, fn) {
   });
 }
 
+// Оптимизированная транзакция для обычного хода (playCard/drawCard/passTurn):
+// читаем только руку текущего игрока — не нужны все остальные.
+// Исключение: если раунд заканчивается (рука опустела), движок сам вызовет transact
+// для полного пересчёта очков, где нужны все руки.
+async function playTransact(code, currentUid, fn) {
+  const rRef = roomRef(code);
+  await runTransaction(db, async (tx) => {
+    const [snap, myHandSnap] = await Promise.all([
+      tx.get(rRef),
+      tx.get(handRef(code, currentUid))
+    ]);
+    if (!snap.exists()) throw new Error('Комната не найдена');
+    const meta = snap.data();
+    const order = meta.order || [];
+    const myCards = myHandSnap.exists() ? (myHandSnap.data().cards || []) : [];
+
+    // Для движка нужны все руки — подставляем пустые для остальных (их карты не изменятся
+    // при обычном ходе). Если движок попытается начислить штрафы (конец раунда), он
+    // увидит пустые руки других, что приведёт к некорректному пересчёту — ловим это случай.
+    const handsForEngine = {};
+    for (const uid of order) {
+      handsForEngine[uid] = uid === currentUid ? myCards : (meta.handCounts?.[uid] > 0 ? null : []);
+    }
+    handsForEngine[currentUid] = myCards;
+
+    const fullRoom = { ...meta, hands: handsForEngine };
+    const updated = fn(fullRoom);
+    const { hands: updatedHands, ...updatedMeta } = updated;
+
+    // Если раунд закончился (кто-то выбыл или победил) — откатываемся к полной транзакции
+    if (updatedMeta.roundWinnerId && updatedMeta.roundWinnerId !== meta.roundWinnerId) {
+      throw { retryFull: true };
+    }
+
+    if (updatedMeta.currentPlayerId !== meta.currentPlayerId) {
+      updatedMeta.turnStartedAt = Date.now();
+    }
+
+    tx.set(rRef, { ...updatedMeta, handCounts: computeHandCounts(updatedHands) });
+    // Записываем только изменившиеся руки (текущий игрок)
+    if (updatedHands[currentUid] !== undefined) {
+      tx.set(handRef(code, currentUid), { cards: updatedHands[currentUid] });
+    }
+  });
+}
+
+// Умная обёртка: пробуем быструю транзакцию, при конце раунда — полную
+async function smartTransact(code, uid, fn) {
+  try {
+    await playTransact(code, uid, fn);
+  } catch (err) {
+    if (err?.retryFull) {
+      await transact(code, fn);
+    } else {
+      throw err;
+    }
+  }
+}
+
 export const startGameInRoom = (code) => transact(code, (room) => startGame(room));
 export const playCardInRoom = (code, uid, cardId, chosenSuit) =>
-  transact(code, (room) => playCard(room, uid, cardId, chosenSuit));
-export const drawCardInRoom = (code, uid) => transact(code, (room) => drawCard(room, uid));
-export const passTurnInRoom = (code, uid) => transact(code, (room) => passTurn(room, uid));
+  smartTransact(code, uid, (room) => playCard(room, uid, cardId, chosenSuit));
+export const drawCardInRoom = (code, uid) =>
+  smartTransact(code, uid, (room) => drawCard(room, uid));
+export const passTurnInRoom = (code, uid) =>
+  smartTransact(code, uid, (room) => passTurn(room, uid));
 export const startNextRoundInRoom = (code) => transact(code, (room) => startNextRound(room));
 
 // Проверка на бездействие — любой клиент в комнате может её вызвать (например, раз в 5-10 сек).
