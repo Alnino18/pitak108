@@ -190,6 +190,16 @@ export default function Room({ code, onLeave }) {
           }).catch(() => {})
         );
       }
+      // В быстром режиме раунд один — показываем карты на руках 6 секунд
+      // перед финальным экраном (как в классике после каждого раунда).
+      if (room.settings?.mode === 'quick' && room.hands && room.players) {
+        setRoundReveal({
+          players: room.players,
+          hands: room.hands,
+          winnerId: room.winnerId
+        });
+        setTimeout(() => setRoundReveal(null), 6000);
+      }
     }
     if (room?.status !== 'finished') wasFinished.current = false;
   }, [room?.status, room?.winnerId, user.uid]);
